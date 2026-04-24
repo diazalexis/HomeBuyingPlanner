@@ -257,11 +257,17 @@
   }
   .expense-row{
     display:grid;
-    grid-template-columns:minmax(0,1fr) 150px;
+    grid-template-columns:minmax(0,1fr) 130px 130px;
     gap:12px;
     align-items:center;
     padding:10px 14px;
     border-bottom:1px solid var(--line);
+  }
+  .expense-head{
+    background:#fbfcff;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
   }
   .expense-row:last-child{border-bottom:none}
   .expense-row label{
@@ -287,6 +293,14 @@
   .expense-value{
     text-align:right;
     font-weight:800;
+  }
+  .expense-row.shared .expense-value{
+    grid-column:2 / -1;
+  }
+  .person-inputs{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
   }
 
   .full{ grid-column:1 / -1; }
@@ -443,6 +457,13 @@
     .expense-row{
       grid-template-columns:1fr;
     }
+    .expense-row.shared .expense-value{
+      grid-column:auto;
+      text-align:left;
+    }
+    .expense-head{
+      display:none;
+    }
     .wrap{padding:14px}
     h1{font-size:24px}
   }
@@ -500,6 +521,7 @@
           <div class="field"><label for="taxOverride">Property tax / month</label><input id="taxOverride" placeholder="Auto" inputmode="numeric"><small id="taxHelp">Auto estimate appears after you enter the price fields.</small></div>
           <div class="field"><label for="insurance">Insurance / month</label><input id="insurance" placeholder="Enter amount" inputmode="numeric"><small>Editable placeholder.</small></div>
           <div class="field"><label for="hoa">HOA / month</label><input id="hoa" placeholder="Enter amount" inputmode="numeric"><small>Include only if applicable.</small></div>
+          <div class="field"><label for="pmiRate">PMI annual rate %</label><input id="pmiRate" placeholder="Auto" inputmode="decimal"><small id="pmiHelp">Applies only below 20% down.</small></div>
         </div>
 
         <div class="input-group">
@@ -573,7 +595,12 @@
           <div class="result good">
             <div class="label">Estimated PITIA</div>
             <div class="value" id="pitia">—</div>
-            <div class="subvalue">P&amp;I + taxes + insurance + HOA.</div>
+            <div class="subvalue">P&amp;I + taxes + insurance + PMI + HOA.</div>
+          </div>
+          <div class="result warn">
+            <div class="label">Estimated PMI</div>
+            <div class="value" id="pmiMonthly">—</div>
+            <div class="subvalue">Shown only when down payment is below 20%.</div>
           </div>
         </div>
 
@@ -604,16 +631,19 @@
     <p class="hint">Estimated PITIA is included automatically as the housing payment.</p>
 
     <div class="field full" style="margin-bottom:14px;">
-      <label for="budgetIncome">Monthly income for budget</label>
-      <input id="budgetIncome" placeholder="Uses gross monthly income if blank" inputmode="numeric">
-      <small>Use take-home income here if you want the savings estimate to reflect after-tax cash flow.</small>
+      <label>Net monthly income for budget</label>
+      <div class="person-inputs">
+        <input id="budgetIncomePerson1" placeholder="Person 1 net income" inputmode="numeric" aria-label="Person 1 net monthly budget income">
+        <input id="budgetIncomePerson2" placeholder="Person 2 net income" inputmode="numeric" aria-label="Person 2 net monthly budget income">
+      </div>
+      <small>Use take-home income here so the savings estimate reflects after-tax cash flow.</small>
     </div>
 
     <div class="budget-summary">
       <div class="result">
         <div class="label">Budget income</div>
         <div class="value" id="budgetIncomeSummary">—</div>
-        <div class="subvalue">Budget field, or gross monthly income.</div>
+        <div class="subvalue">Net income entered above.</div>
       </div>
       <div class="result warn">
         <div class="label">PITIA</div>
@@ -621,9 +651,14 @@
         <div class="subvalue">Pulled from monthly payment.</div>
       </div>
       <div class="result">
-        <div class="label">Estimated expenses</div>
-        <div class="value" id="monthlyExpensesTotal">—</div>
-        <div class="subvalue">Monthly expenses excluding PITIA.</div>
+        <div class="label">Fixed expenses</div>
+        <div class="value" id="fixedExpensesTotal">—</div>
+        <div class="subvalue">Excludes PITIA.</div>
+      </div>
+      <div class="result">
+        <div class="label">Flexible expenses</div>
+        <div class="value" id="flexibleExpensesTotal">—</div>
+        <div class="subvalue">Monthly spending estimate.</div>
       </div>
       <div class="result good">
         <div class="label">Available for savings</div>
@@ -634,21 +669,40 @@
 
     <div class="budget-grid">
       <div class="expense-group">
-        <h3>Housing</h3>
-        <div class="expense-row">
+        <h3>Fixed</h3>
+        <div class="expense-row expense-head">
+          <span></span>
+          <span class="expense-value">Person 1</span>
+          <span class="expense-value">Person 2</span>
+        </div>
+        <div class="expense-row shared">
           <label>Mortgage / PITIA</label>
           <div class="expense-value" id="budgetPitiaRow">—</div>
         </div>
+        <div class="expense-row"><label>Auto payment</label><input id="expenseAutoPaymentPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 auto payment"><input id="expenseAutoPaymentPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 auto payment"></div>
+        <div class="expense-row"><label>Garbage</label><input id="expenseGarbagePerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 garbage expense"><input id="expenseGarbagePerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 garbage expense"></div>
+        <div class="expense-row"><label>Water</label><input id="expenseWaterPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 water expense"><input id="expenseWaterPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 water expense"></div>
+        <div class="expense-row"><label>Sewer</label><input id="expenseSewerPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 sewer expense"><input id="expenseSewerPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 sewer expense"></div>
+        <div class="expense-row"><label>Gas &amp; electric</label><input id="expenseGasElectricPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 gas and electric expense"><input id="expenseGasElectricPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 gas and electric expense"></div>
+        <div class="expense-row"><label>Internet &amp; cable</label><input id="expenseInternetCablePerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 internet and cable expense"><input id="expenseInternetCablePerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 internet and cable expense"></div>
+        <div class="expense-row"><label>Phone</label><input id="expensePhonePerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 phone expense"><input id="expensePhonePerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 phone expense"></div>
+        <div class="expense-row"><label>Misc</label><input id="expenseFixedMiscPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 fixed misc expense"><input id="expenseFixedMiscPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 fixed misc expense"></div>
       </div>
 
       <div class="expense-group">
-        <h3>Monthly expenses</h3>
-        <div class="expense-row"><label for="expenseGroceries">Groceries</label><input id="expenseGroceries" placeholder="$700-$1,000" inputmode="numeric"></div>
-        <div class="expense-row"><label for="expenseUtilitiesComms">Utilities + internet + phones</label><input id="expenseUtilitiesComms" placeholder="$450-$700" inputmode="numeric"></div>
-        <div class="expense-row"><label for="expenseTransport">Gas / transport</label><input id="expenseTransport" placeholder="$300-$700" inputmode="numeric"></div>
-        <div class="expense-row"><label for="expenseAutoInsuranceRegistration">Auto insurance / registration</label><input id="expenseAutoInsuranceRegistration" placeholder="$200-$450" inputmode="numeric"></div>
-        <div class="expense-row"><label for="expenseDiningEntertainment">Dining / entertainment</label><input id="expenseDiningEntertainment" placeholder="$400-$1,000" inputmode="numeric"></div>
-        <div class="expense-row"><label for="expenseMiscMedicalHousehold">Misc / medical / household</label><input id="expenseMiscMedicalHousehold" placeholder="$400-$800" inputmode="numeric"></div>
+        <h3>Flexible</h3>
+        <div class="expense-row expense-head">
+          <span></span>
+          <span class="expense-value">Person 1</span>
+          <span class="expense-value">Person 2</span>
+        </div>
+        <div class="expense-row"><label>Groceries</label><input id="expenseGroceriesPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 groceries expense"><input id="expenseGroceriesPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 groceries expense"></div>
+        <div class="expense-row"><label>Restaurants &amp; bars</label><input id="expenseRestaurantsBarsPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 restaurants and bars expense"><input id="expenseRestaurantsBarsPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 restaurants and bars expense"></div>
+        <div class="expense-row"><label>Entertainment &amp; recreation</label><input id="expenseEntertainmentPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 entertainment and recreation expense"><input id="expenseEntertainmentPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 entertainment and recreation expense"></div>
+        <div class="expense-row"><label>Personal</label><input id="expensePersonalPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 personal expense"><input id="expensePersonalPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 personal expense"></div>
+        <div class="expense-row"><label>Pets</label><input id="expensePetsPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 pets expense"><input id="expensePetsPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 pets expense"></div>
+        <div class="expense-row"><label>Shopping</label><input id="expenseShoppingPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 shopping expense"><input id="expenseShoppingPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 shopping expense"></div>
+        <div class="expense-row"><label>Misc</label><input id="expenseFlexibleMiscPerson1" placeholder="$0" inputmode="numeric" aria-label="Person 1 flexible misc expense"><input id="expenseFlexibleMiscPerson2" placeholder="$0" inputmode="numeric" aria-label="Person 2 flexible misc expense"></div>
       </div>
     </div>
   </div>
@@ -841,7 +895,7 @@
 
   <div class="card section" style="margin-top:18px;">
     <h2>Monthly cash runway</h2>
-    <p class="hint">The table starts as a forecast. Enter actual monthly savings or one-time costs in a row to override that row while preserving the original estimate.</p>
+    <p class="hint">The table starts as a forecast. Enter an ending balance in any row to make that balance flow through the remaining rows.</p>
     <div class="table-wrap">
       <table id="timelineTable">
         <thead>
@@ -850,13 +904,12 @@
             <th>Event</th>
             <th class="right">Estimated cost</th>
             <th class="right">Estimated savings</th>
-            <th class="right">Actual savings</th>
             <th class="right">Ending balance</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="6" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>
+            <td colspan="5" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>
           </tr>
         </tbody>
       </table>
@@ -870,30 +923,58 @@
 <script>
   const fieldIds = [
     'base','lot','structural','design','down','lockRate','flexCash','buydown',
-    'closingCosts','cash','monthlySave','income','existingDebt','taxOverride',
-    'insurance','hoa','monthsToClose','budgetIncome','expenseGroceries',
-    'expenseUtilitiesComms','expenseTransport','expenseAutoInsuranceRegistration',
-    'expenseDiningEntertainment','expenseMiscMedicalHousehold'
+    'closingCosts','cash','monthlySave','income','existingDebt','taxOverride','pmiRate',
+    'insurance','hoa','monthsToClose','budgetIncomePerson1','budgetIncomePerson2',
+    'expenseAutoPaymentPerson1','expenseAutoPaymentPerson2','expenseGarbagePerson1',
+    'expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2',
+    'expenseSewerPerson1','expenseSewerPerson2',
+    'expenseGasElectricPerson1','expenseGasElectricPerson2','expenseInternetCablePerson1',
+    'expenseInternetCablePerson2','expensePhonePerson1','expensePhonePerson2',
+    'expenseFixedMiscPerson1','expenseFixedMiscPerson2',
+    'expenseGroceriesPerson1','expenseGroceriesPerson2','expenseRestaurantsBarsPerson1',
+    'expenseRestaurantsBarsPerson2','expenseEntertainmentPerson1','expenseEntertainmentPerson2',
+    'expensePersonalPerson1','expensePersonalPerson2','expensePetsPerson1','expensePetsPerson2',
+    'expenseShoppingPerson1','expenseShoppingPerson2','expenseFlexibleMiscPerson1',
+    'expenseFlexibleMiscPerson2'
   ];
 
-  const monthlyExpenseIds = [
-    'expenseGroceries','expenseUtilitiesComms','expenseTransport',
-    'expenseAutoInsuranceRegistration','expenseDiningEntertainment',
-    'expenseMiscMedicalHousehold'
+  const fixedExpenseIds = [
+    'expenseAutoPaymentPerson1','expenseAutoPaymentPerson2','expenseGarbagePerson1',
+    'expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2',
+    'expenseSewerPerson1','expenseSewerPerson2',
+    'expenseGasElectricPerson1','expenseGasElectricPerson2','expenseInternetCablePerson1',
+    'expenseInternetCablePerson2','expensePhonePerson1','expensePhonePerson2',
+    'expenseFixedMiscPerson1','expenseFixedMiscPerson2'
   ];
+  const flexibleExpenseIds = [
+    'expenseGroceriesPerson1','expenseGroceriesPerson2','expenseRestaurantsBarsPerson1',
+    'expenseRestaurantsBarsPerson2','expenseEntertainmentPerson1','expenseEntertainmentPerson2',
+    'expensePersonalPerson1','expensePersonalPerson2','expensePetsPerson1','expensePetsPerson2',
+    'expenseShoppingPerson1','expenseShoppingPerson2','expenseFlexibleMiscPerson1',
+    'expenseFlexibleMiscPerson2'
+  ];
+  const budgetIncomeIds = ['budgetIncomePerson1','budgetIncomePerson2'];
 
   const actuals = {
-    monthlySavings: {}
+    endingBalances: {}
   };
 
   const moneyInputIds = new Set([
     'base','lot','structural','design','flexCash','buydown','closingCosts',
     'cash','monthlySave','income','existingDebt','taxOverride','insurance','hoa',
-    'budgetIncome','expenseGroceries','expenseUtilitiesComms','expenseTransport',
-    'expenseAutoInsuranceRegistration','expenseDiningEntertainment',
-    'expenseMiscMedicalHousehold'
+    'budgetIncomePerson1','budgetIncomePerson2','expenseAutoPaymentPerson1','expenseAutoPaymentPerson2',
+    'expenseGarbagePerson1','expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2',
+    'expenseSewerPerson1','expenseSewerPerson2',
+    'expenseGasElectricPerson1','expenseGasElectricPerson2','expenseInternetCablePerson1',
+    'expenseInternetCablePerson2','expensePhonePerson1','expensePhonePerson2',
+    'expenseFixedMiscPerson1','expenseFixedMiscPerson2',
+    'expenseGroceriesPerson1','expenseGroceriesPerson2','expenseRestaurantsBarsPerson1',
+    'expenseRestaurantsBarsPerson2','expenseEntertainmentPerson1','expenseEntertainmentPerson2',
+    'expensePersonalPerson1','expensePersonalPerson2','expensePetsPerson1','expensePetsPerson2',
+    'expenseShoppingPerson1','expenseShoppingPerson2','expenseFlexibleMiscPerson1',
+    'expenseFlexibleMiscPerson2'
   ]);
-  const percentInputIds = new Set(['down','lockRate']);
+  const percentInputIds = new Set(['down','lockRate','pmiRate']);
 
   const currencyFormatter = new Intl.NumberFormat(undefined, {
     style: 'currency',
@@ -923,7 +1004,7 @@
   };
 
   function inputKind(el){
-    if (!el || !el.id) return el?.dataset?.monthlySavings ? 'money' : '';
+    if (!el || !el.id) return el?.dataset?.endingBalance ? 'money' : '';
     if (moneyInputIds.has(el.id)) return 'money';
     if (percentInputIds.has(el.id)) return 'percent';
     return '';
@@ -960,7 +1041,7 @@
 
   function formatPlannerInputs(){
     fieldIds.forEach(id => formatInputValue(document.getElementById(id)));
-    document.querySelectorAll('[data-monthly-savings]').forEach(formatInputValue);
+    document.querySelectorAll('[data-ending-balance]').forEach(formatInputValue);
   }
 
   function displayMoney(value, active){
@@ -990,7 +1071,7 @@
     const tbody = document.querySelector('#timelineTable tbody');
     tbody.innerHTML = '';
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td colspan="6" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>';
+    tr.innerHTML = '<td colspan="5" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>';
     tbody.appendChild(tr);
   }
 
@@ -1009,11 +1090,25 @@
     let balance = Number.isFinite(cash) ? cash : 0;
     const rows = [];
 
-    rows.push({ key:'start', month:'Now', event:'Starting cash', cost:null, save:null, ending:balance });
+    const pushRow = (row) => {
+      const override = parsedNumber(actuals.endingBalances[row.key]);
+      const ending = Number.isFinite(override) ? override : row.ending;
+      if (Number.isFinite(override)) balance = override;
+      rows.push({ ...row, ending });
+    };
+
+    pushRow({
+      key:'start',
+      month:'Now',
+      event:'Starting cash',
+      cost:null,
+      save:null,
+      ending:balance
+    });
 
     const reservationCost = Number.isFinite(reservationDeposit) ? reservationDeposit : null;
     balance -= reservationCost == null ? 0 : reservationCost;
-    rows.push({
+    pushRow({
       key:'reservation',
       month:'Reservation',
       event:'Reservation deposit',
@@ -1024,7 +1119,7 @@
 
     const contractCost = Number.isFinite(contractDeposit) ? contractDeposit : null;
     balance -= contractCost == null ? 0 : contractCost;
-    rows.push({
+    pushRow({
       key:'contract',
       month:'Contract',
       event:'Contract deposit',
@@ -1040,22 +1135,21 @@
       const key = `month-${i}`;
       const cost = isDesignMonth ? (Number.isFinite(designDeposit) ? designDeposit : 0) : (isClosingMonth ? (Number.isFinite(cashToClose) ? cashToClose : 0) : 0);
       const save = Number.isFinite(monthlySave) ? monthlySave : 0;
-      const liveSave = Number.isFinite(parsedNumber(actuals.monthlySavings[key])) ? parsedNumber(actuals.monthlySavings[key]) : save;
-      balance = balance + liveSave - cost;
-      rows.push({
+      balance = balance + save - cost;
+      pushRow({
         key,
         month: `Month ${i}`,
         event: isDesignMonth ? 'Design deposit' : (isClosingMonth ? 'Closing' : 'Savings month'),
         cost: cost || null,
         save: save || null,
-        ending: balance
+        ending:balance
       });
     }
 
     if (months === 0){
       const closingCost = Number.isFinite(cashToClose) ? cashToClose : null;
       balance -= closingCost == null ? 0 : closingCost;
-      rows.push({
+      pushRow({
         key:'closing',
         month:'Closing',
         event:'Closing',
@@ -1069,14 +1163,14 @@
       const tr = document.createElement('tr');
       if (r.event.includes('deposit')) tr.style.background = '#fafcff';
       if (r.event === 'Closing') tr.style.background = '#fff7ed';
-      const actualSavingsValue = actuals.monthlySavings[r.key] ?? '';
+      const actualEndingValue = actuals.endingBalances[r.key] ?? '';
+      const endingMarkup = `<input class="inline-input" data-ending-balance="${r.key}" placeholder="${money(r.ending)}" inputmode="numeric" value="${escapeAttr(actualEndingValue)}">`;
       tr.innerHTML = `
         <td>${r.month}</td>
         <td>${r.event}</td>
         <td class="right">${r.cost == null ? '-' : money(r.cost)}</td>
         <td class="right">${r.save == null ? '-' : money(r.save)}</td>
-        <td class="right">${r.save == null ? '-' : `<input class="inline-input" data-monthly-savings="${r.key}" placeholder="Actual" inputmode="numeric" value="${escapeAttr(actualSavingsValue)}">`}</td>
-        <td class="right">${r.ending < 0 ? '<span style="color:#b91c1c;font-weight:700">' + money(r.ending) + '</span>' : money(r.ending)}</td>
+        <td class="right">${endingMarkup}</td>
       `;
       tbody.appendChild(tr);
     });
@@ -1084,7 +1178,7 @@
 
   function recalc(){
     const anyInput = fieldIds.some(hasValue) ||
-      Object.values(actuals.monthlySavings).some(value => String(value ?? '').trim() !== '');
+      Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '');
 
     if (!anyInput){
       text(document.getElementById('reservationDeposit'), '—');
@@ -1095,6 +1189,7 @@
       text(document.getElementById('loanAmount'), '—');
       text(document.getElementById('piCustom'), '—');
       text(document.getElementById('pitia'), '—');
+      text(document.getElementById('pmiMonthly'), '—');
       text(document.getElementById('cashToClose'), '—');
       text(document.getElementById('remainingCash'), '—');
       text(document.getElementById('frontDti'), '—');
@@ -1106,11 +1201,13 @@
       text(document.getElementById('budgetIncomeSummary'), '—');
       text(document.getElementById('budgetPitia'), '—');
       text(document.getElementById('budgetPitiaRow'), '—');
-      text(document.getElementById('monthlyExpensesTotal'), '—');
+      text(document.getElementById('fixedExpensesTotal'), '—');
+      text(document.getElementById('flexibleExpensesTotal'), '—');
       text(document.getElementById('monthlySavingsAfterExpenses'), '—');
       document.getElementById('monthlySavingsAfterExpenses').closest('.result').classList.remove('danger');
       document.getElementById('monthlySavingsAfterExpenses').closest('.result').classList.add('good');
       text(document.getElementById('taxHelp'), 'Auto estimate appears after you enter the price fields.');
+      text(document.getElementById('pmiHelp'), 'Applies only below 20% down.');
       setTimelinePlaceholder();
       document.getElementById('modelNote').textContent = 'Fill in the price, incentive, and loan fields to compare cash-to-close, monthly carry, and runway.';
       return;
@@ -1122,6 +1219,7 @@
     const design = Number.isFinite(num('design')) ? num('design') : 0;
     const downPct = (Number.isFinite(num('down')) ? num('down') : 0) / 100;
     const lockRate = Number.isFinite(num('lockRate')) ? num('lockRate') : 0;
+    const pmiRate = (Number.isFinite(num('pmiRate')) ? num('pmiRate') : 0.5) / 100;
     const flexCash = Number.isFinite(num('flexCash')) ? num('flexCash') : 0;
     const buydown = Math.max(0, Math.min(Number.isFinite(num('buydown')) ? num('buydown') : 0, flexCash));
     const closingCosts = Number.isFinite(num('closingCosts')) ? num('closingCosts') : 0;
@@ -1130,9 +1228,7 @@
     const income = Number.isFinite(num('income')) ? num('income') : 0;
     const existingDebt = Number.isFinite(num('existingDebt')) ? num('existingDebt') : 0;
     const monthsToClose = Number.isFinite(num('monthsToClose')) ? Math.max(0, Math.floor(num('monthsToClose'))) : 0;
-    const budgetIncome = hasValue('budgetIncome')
-      ? (Number.isFinite(num('budgetIncome')) ? num('budgetIncome') : 0)
-      : income;
+    const budgetIncome = sumFields(budgetIncomeIds);
 
     const totalPrice = base + lot + structural + design;
     const autoTaxes = totalPrice * 0.0065 / 12;
@@ -1142,31 +1238,31 @@
     const loanAmount = totalPrice * (1 - downPct);
     const downPaymentAmount = totalPrice * downPct;
     const pAndI = pmt(loanAmount, lockRate, 360);
-    const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + hoa;
+    const pmiMonthly = downPct > 0 && downPct < 0.20 ? (loanAmount * pmiRate / 12) : 0;
+    const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + pmiMonthly + hoa;
     const reservationDeposit = base * 0.05 + lot * 0.05;
     const contractDeposit = base * 0.05 + lot * 0.05 + structural * 0.20;
     const designDeposit = design * 0.20;
     const priorDeposits = reservationDeposit + contractDeposit + designDeposit;
     const flexCreditRemaining = Math.max(0, flexCash - buydown);
     const cashToClose = Math.max(0, (totalPrice * downPct) + closingCosts - priorDeposits - flexCreditRemaining);
-    const totalActualSavings = Array.from({ length: monthsToClose }, (_, idx) => {
-      const key = `month-${idx + 1}`;
-      const value = parsedNumber(actuals.monthlySavings[key]);
-      return Number.isFinite(value) ? value : monthlySave;
-    }).reduce((sum, value) => sum + value, 0);
+    const totalActualSavings = Array.from({ length: monthsToClose }, () => monthlySave)
+      .reduce((sum, value) => sum + value, 0);
     const totalDeposits = priorDeposits + cashToClose;
     const endingBalance = cash + totalActualSavings - totalDeposits;
     const frontDti = income > 0 ? (pitia / income) * 100 : NaN;
     const backDti = income > 0 ? ((pitia + existingDebt) / income) * 100 : NaN;
-    const monthlyExpenses = sumFields(monthlyExpenseIds);
-    const monthlyAvailableForSavings = budgetIncome - pitia - monthlyExpenses;
-    const hasBudgetIncome = hasValue('budgetIncome') || hasValue('income');
-    const hasBudgetExpenses = anyFieldValue(monthlyExpenseIds);
+    const fixedExpenses = sumFields(fixedExpenseIds);
+    const flexibleExpenses = sumFields(flexibleExpenseIds);
+    const monthlyAvailableForSavings = budgetIncome - pitia - fixedExpenses - flexibleExpenses;
+    const hasBudgetIncome = anyFieldValue(budgetIncomeIds);
+    const hasBudgetExpenses = anyFieldValue(fixedExpenseIds) || anyFieldValue(flexibleExpenseIds);
 
     text(document.getElementById('totalPrice'), displayMoney(totalPrice, true));
     text(document.getElementById('loanAmount'), displayMoney(loanAmount, true));
     text(document.getElementById('piCustom'), displayMoney(pAndI, Number.isFinite(pAndI)));
     text(document.getElementById('pitia'), displayMoney(pitia, true));
+    text(document.getElementById('pmiMonthly'), displayMoney(pmiMonthly, downPct > 0 && downPct < 0.20));
     text(document.getElementById('cashToClose'), displayMoney(cashToClose, true));
     text(document.getElementById('remainingCash'), displayMoney(endingBalance, true));
     text(document.getElementById('frontDti'), displayPct(frontDti, Number.isFinite(frontDti)));
@@ -1182,7 +1278,8 @@
     text(document.getElementById('budgetIncomeSummary'), displayMoney(budgetIncome, hasBudgetIncome));
     text(document.getElementById('budgetPitia'), displayMoney(pitia, Number.isFinite(pitia)));
     text(document.getElementById('budgetPitiaRow'), displayMoney(pitia, Number.isFinite(pitia)));
-    text(document.getElementById('monthlyExpensesTotal'), displayMoney(monthlyExpenses, hasBudgetExpenses));
+    text(document.getElementById('fixedExpensesTotal'), displayMoney(fixedExpenses, hasBudgetExpenses));
+    text(document.getElementById('flexibleExpensesTotal'), displayMoney(flexibleExpenses, hasBudgetExpenses));
     const savingsEl = document.getElementById('monthlySavingsAfterExpenses');
     text(savingsEl, displayMoney(monthlyAvailableForSavings, hasBudgetIncome || hasBudgetExpenses));
     savingsEl.closest('.result').classList.toggle('danger', monthlyAvailableForSavings < 0 && (hasBudgetIncome || hasBudgetExpenses));
@@ -1192,6 +1289,10 @@
       ? 'Manual tax override applied.'
       : `Auto estimate: ${money(autoTaxes)} / month at about 0.65% annual.`;
     text(document.getElementById('taxHelp'), taxHelp);
+    const pmiHelp = downPct > 0 && downPct < 0.20
+      ? `PMI estimate: ${money(pmiMonthly)} / month at ${(pmiRate * 100).toFixed(2)}% annual.`
+      : 'No PMI modeled at 20% down or higher.';
+    text(document.getElementById('pmiHelp'), pmiHelp);
 
     const modelNote = document.getElementById('modelNote');
     modelNote.textContent = `Modeled rate: ${hasValue('lockRate') ? lockRate.toFixed(2) + '%' : '—'}. ` +
@@ -1215,8 +1316,8 @@
       version: 2,
       fields: {},
       actuals: {
-        monthlySavings: Object.fromEntries(
-          Object.entries(actuals.monthlySavings).filter(([, value]) => String(value ?? '').trim() !== '')
+        endingBalances: Object.fromEntries(
+          Object.entries(actuals.endingBalances).filter(([, value]) => String(value ?? '').trim() !== '')
         )
       }
     };
@@ -1245,10 +1346,10 @@
       }
     });
 
-    actuals.monthlySavings = {};
-    if (data && typeof data === 'object' && data.actuals && typeof data.actuals.monthlySavings === 'object') {
-      Object.entries(data.actuals.monthlySavings).forEach(([key, value]) => {
-        actuals.monthlySavings[key] = value ?? '';
+    actuals.endingBalances = {};
+    if (data && typeof data === 'object' && data.actuals && typeof data.actuals.endingBalances === 'object') {
+      Object.entries(data.actuals.endingBalances).forEach(([key, value]) => {
+        actuals.endingBalances[key] = value ?? '';
       });
     }
 
@@ -1281,18 +1382,17 @@
 
     formatInputValue(e.target);
 
-    const monthlySavingsKey = e.target.dataset.monthlySavings;
-    if (monthlySavingsKey) {
-      actuals.monthlySavings[monthlySavingsKey] = e.target.value;
+    const endingBalanceKey = e.target.dataset.endingBalance;
+    if (endingBalanceKey) {
+      actuals.endingBalances[endingBalanceKey] = e.target.value;
     }
 
     recalc();
   });
   document.getElementById('timelineTable').addEventListener('change', (e) => {
-    const monthlySavingsKey = e.target.dataset.monthlySavings;
-
-    if (monthlySavingsKey){
-      actuals.monthlySavings[monthlySavingsKey] = e.target.value;
+    const endingBalanceKey = e.target.dataset.endingBalance;
+    if (endingBalanceKey){
+      actuals.endingBalances[endingBalanceKey] = e.target.value;
     }
 
     recalc();
