@@ -35,9 +35,6 @@
     padding:24px;
   }
   .hero{
-    display:grid;
-    grid-template-columns: 1.55fr .95fr;
-    gap:18px;
     margin-bottom:18px;
   }
   .card{
@@ -46,14 +43,15 @@
     border-radius:var(--radius);
     box-shadow:var(--shadow);
   }
-  .hero-main{ padding:24px; }
-  .eyebrow{
-    font-size:12px;
-    text-transform:uppercase;
-    letter-spacing:.12em;
-    color:var(--accent);
-    font-weight:700;
-    margin-bottom:8px;
+  .hero-main{
+    padding:24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+  }
+  .hero-copy{
+    max-width:760px;
   }
   h1{
     margin:0 0 8px 0;
@@ -62,7 +60,7 @@
   }
   .sub{
     color:var(--muted);
-    margin:0 0 16px 0;
+    margin:0;
     font-size:15px;
     line-height:1.5;
   }
@@ -70,7 +68,7 @@
     display:flex;
     flex-wrap:wrap;
     gap:10px;
-    margin-top:18px;
+    justify-content:flex-end;
   }
   .btn{
     appearance:none;
@@ -94,64 +92,6 @@
     color:#2448a6;
     border-color:#d8e3ff;
   }
-  .chips{
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px;
-  }
-  .chip{
-    padding:9px 12px;
-    border-radius:999px;
-    background:#eef4ff;
-    color:#264fba;
-    border:1px solid #d8e3ff;
-    font-size:13px;
-    font-weight:600;
-  }
-  .chip.green{background:#ecfdf5;color:#0f7a43;border-color:#c7f3dc}
-  .chip.gray{background:#f3f4f6;color:#344054;border-color:#e5e7eb}
-  .hero-side{
-    padding:18px;
-    display:grid;
-    gap:12px;
-  }
-  .metric-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:12px;
-  }
-  .metric{
-    padding:14px;
-    border-radius:16px;
-    background:linear-gradient(180deg, #ffffff, #fbfcff);
-    border:1px solid var(--line);
-  }
-  .metric .label{
-    display:block;
-    color:var(--muted);
-    font-size:12px;
-    margin-bottom:6px;
-  }
-  .metric .value{
-    font-size:18px;
-    font-weight:800;
-    line-height:1.2;
-  }
-  .metric .note{
-    margin-top:4px;
-    font-size:12px;
-    color:var(--muted);
-  }
-  .alert{
-    padding:14px 16px;
-    border-radius:16px;
-    background:#fff7ed;
-    border:1px solid #fed7aa;
-    color:#7c2d12;
-    font-size:13px;
-    line-height:1.45;
-  }
-
   .grid-2{
     display:grid;
     grid-template-columns:1.05fr .95fr;
@@ -174,6 +114,27 @@
     display:grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap:10px 12px;
+  }
+  .input-group{
+    grid-column:1 / -1;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:10px 12px;
+  }
+  .input-group h3{
+    grid-column:1 / -1;
+    margin:10px 0 0;
+    padding-top:10px;
+    border-top:1px solid var(--line);
+    color:#334155;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .input-group:first-child h3{
+    margin-top:0;
+    padding-top:0;
+    border-top:none;
   }
   .field{
     border:1px solid var(--line);
@@ -223,6 +184,27 @@
     display:grid;
     grid-template-columns:repeat(2, minmax(0,1fr));
     gap:10px;
+  }
+  .result-group{
+    grid-column:1 / -1;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:10px;
+  }
+  .result-group h3{
+    grid-column:1 / -1;
+    margin:10px 0 0;
+    padding-top:10px;
+    border-top:1px solid var(--line);
+    color:#334155;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+  }
+  .result-group:first-child h3{
+    margin-top:0;
+    padding-top:0;
+    border-top:none;
   }
   .result{
     padding:14px;
@@ -379,15 +361,22 @@
   }
 
   @media (max-width: 1050px){
-    .hero, .grid-2, .footer-grid, .checks{
+    .grid-2, .footer-grid, .checks{
       grid-template-columns:1fr;
+    }
+    .hero-main{
+      align-items:flex-start;
+      flex-direction:column;
+    }
+    .toolbar{
+      justify-content:flex-start;
     }
     .timeline{
       grid-template-columns:1fr 1fr;
     }
   }
   @media (max-width: 680px){
-    .inputs, .results, .metric-grid, .timeline{
+    .inputs, .input-group, .results, .result-group, .timeline{
       grid-template-columns:1fr;
     }
     .wrap{padding:14px}
@@ -399,127 +388,143 @@
 <div class="wrap">
   <div class="hero">
     <div class="card hero-main">
-      <div class="eyebrow">Home buying planner</div>
-      <h1>Home Buying Planner</h1>
-      <p class="sub">
-        Use this page to compare purchase price, deposits, cash-to-close, monthly carry, and runway.
-        The page starts with no prefilled assumptions. Save and restore the current state with JSON export/import.
-      </p>
-
-      <div class="chips" aria-label="Summary chips">
-        <span class="chip gray">No prefilled assumptions</span>
-        <span class="chip gray">Blank state by default</span>
-        <span class="chip green">JSON export/import enabled</span>
+      <div class="hero-copy">
+        <h1>Home Buying Planner</h1>
+        <p class="sub">
+          Use this page to compare purchase price, deposits, cash-to-close, monthly carry, and runway.
+        </p>
       </div>
-
       <div class="toolbar">
         <button type="button" class="btn primary" id="exportBtn">Export JSON</button>
         <button type="button" class="btn secondary" id="importBtn">Import JSON</button>
         <input type="file" id="importFile" accept=".json,application/json" hidden />
       </div>
     </div>
-
-    <div class="card hero-side">
-      <div class="metric-grid">
-        <div class="metric">
-          <span class="label">Reservation deposit</span>
-          <div class="value" id="reservationDeposit">—</div>
-          <div class="note">Computed from the price fields.</div>
-        </div>
-        <div class="metric">
-          <span class="label">Contract deposit</span>
-          <div class="value" id="contractDeposit">—</div>
-          <div class="note">Computed from the price fields.</div>
-        </div>
-        <div class="metric">
-          <span class="label">Design deposit</span>
-          <div class="value" id="designDeposit">—</div>
-          <div class="note">Computed from the design budget.</div>
-        </div>
-        <div class="metric">
-          <span class="label">HOA</span>
-          <div class="value">—</div>
-          <div class="note">Enter the monthly HOA amount if applicable.</div>
-        </div>
-      </div>
-      <div class="alert" id="helpAlert">
-        Enter the purchase and financing fields to generate the estimated payment, DTI, cash-to-close, and timeline.
-      </div>
-    </div>
   </div>
 
   <div class="grid-2">
     <div class="card section">
-      <h2>Financial model</h2>
-      <p class="hint">
-        All fields start blank. Values and month-by-month savings overrides are saved in the JSON export and restored on import.
-      </p>
+      <h2>Inputs</h2>
 
       <div class="inputs">
-        <div class="field"><label for="base">Base price</label><input id="base" placeholder="Enter amount" inputmode="numeric"></div>
-        <div class="field"><label for="lot">Homesite premium</label><input id="lot" placeholder="Enter amount" inputmode="numeric"></div>
-        <div class="field"><label for="structural">Structural options</label><input id="structural" placeholder="Enter amount" inputmode="numeric"></div>
-        <div class="field"><label for="design">Design budget</label><input id="design" placeholder="Enter amount" inputmode="numeric"></div>
-        <div class="field"><label for="down">Down payment %</label><input id="down" placeholder="Enter %" inputmode="decimal"><small>Example format: 20</small></div>
-        <div class="field"><label for="lockRate">Modeled rate %</label><input id="lockRate" placeholder="Enter rate" inputmode="decimal"><small>Used for the payment estimate.</small></div>
-        <div class="field"><label for="flexCash">Builder credit / incentive</label><input id="flexCash" placeholder="Enter amount" inputmode="numeric"><small>Total incentive amount available.</small></div>
-        <div class="field"><label for="buydown">Incentive used for buydown</label><input id="buydown" placeholder="Enter amount" inputmode="numeric"><small>Remaining amount may offset cash-to-close.</small></div>
-        <div class="field"><label for="closingCosts">Closing costs</label><input id="closingCosts" placeholder="Enter amount" inputmode="numeric"><small>Replace with the Loan Estimate when available.</small></div>
-        <div class="field"><label for="cash">Cash on hand</label><input id="cash" placeholder="Enter amount" inputmode="numeric"><small>Starting liquid cash.</small></div>
-        <div class="field"><label for="monthlySave">Monthly savings</label><input id="monthlySave" placeholder="Enter amount" inputmode="numeric"><small>Cash added each month before closing.</small></div>
-        <div class="field"><label for="income">Gross monthly income</label><input id="income" placeholder="Enter amount" inputmode="numeric"><small>Used for DTI calculations.</small></div>
-        <div class="field"><label for="existingDebt">Existing monthly debt</label><input id="existingDebt" placeholder="Enter amount" inputmode="numeric"><small>Used for back-end DTI.</small></div>
-        <div class="field"><label for="taxOverride">Property tax / month</label><input id="taxOverride" placeholder="Auto" inputmode="numeric"><small id="taxHelp">Auto estimate appears after you enter the price fields.</small></div>
-        <div class="field"><label for="insurance">Insurance / month</label><input id="insurance" placeholder="Enter amount" inputmode="numeric"><small>Editable placeholder.</small></div>
-        <div class="field"><label for="hoa">HOA / month</label><input id="hoa" placeholder="Enter amount" inputmode="numeric"><small>Include only if applicable.</small></div>
-        <div class="field"><label for="monthsToClose">Estimated months to closing</label><input id="monthsToClose" placeholder="Enter months" inputmode="numeric"><small>Used for the cash runway.</small></div>
+        <div class="input-group">
+          <h3>Purchase Details</h3>
+          <div class="field"><label for="base">Base price</label><input id="base" placeholder="Enter amount" inputmode="numeric"></div>
+          <div class="field"><label for="lot">Homesite premium</label><input id="lot" placeholder="Enter amount" inputmode="numeric"></div>
+          <div class="field"><label for="structural">Structural options</label><input id="structural" placeholder="Enter amount" inputmode="numeric"></div>
+          <div class="field"><label for="design">Design budget</label><input id="design" placeholder="Enter amount" inputmode="numeric"></div>
+        </div>
+
+        <div class="input-group">
+          <h3>Financing and Credits</h3>
+          <div class="field"><label for="down">Down payment %</label><input id="down" placeholder="Enter %" inputmode="decimal"><small>Example format: 20</small></div>
+          <div class="field"><label for="lockRate">Modeled rate %</label><input id="lockRate" placeholder="Enter rate" inputmode="decimal"><small>Used for the payment estimate.</small></div>
+          <div class="field"><label for="flexCash">Builder credit / incentive</label><input id="flexCash" placeholder="Enter amount" inputmode="numeric"><small>Total incentive amount available.</small></div>
+          <div class="field"><label for="buydown">Incentive used for buydown</label><input id="buydown" placeholder="Enter amount" inputmode="numeric"><small>Remaining amount may offset cash-to-close.</small></div>
+          <div class="field"><label for="closingCosts">Closing costs</label><input id="closingCosts" placeholder="Enter amount" inputmode="numeric"><small>Replace with the Loan Estimate when available.</small></div>
+        </div>
+
+        <div class="input-group">
+          <h3>Cash Timeline</h3>
+          <div class="field"><label for="cash">Cash on hand</label><input id="cash" placeholder="Enter amount" inputmode="numeric"><small>Starting liquid cash.</small></div>
+          <div class="field"><label for="monthlySave">Monthly savings</label><input id="monthlySave" placeholder="Enter amount" inputmode="numeric"><small>Cash added each month before closing.</small></div>
+          <div class="field"><label for="monthsToClose">Estimated months to closing</label><input id="monthsToClose" placeholder="Enter months" inputmode="numeric"><small>Used for the cash runway.</small></div>
+        </div>
+
+        <div class="input-group">
+          <h3>Monthly Costs</h3>
+          <div class="field"><label for="taxOverride">Property tax / month</label><input id="taxOverride" placeholder="Auto" inputmode="numeric"><small id="taxHelp">Auto estimate appears after you enter the price fields.</small></div>
+          <div class="field"><label for="insurance">Insurance / month</label><input id="insurance" placeholder="Enter amount" inputmode="numeric"><small>Editable placeholder.</small></div>
+          <div class="field"><label for="hoa">HOA / month</label><input id="hoa" placeholder="Enter amount" inputmode="numeric"><small>Include only if applicable.</small></div>
+        </div>
+
+        <div class="input-group">
+          <h3>Qualification</h3>
+          <div class="field"><label for="income">Gross monthly income</label><input id="income" placeholder="Enter amount" inputmode="numeric"><small>Used for DTI calculations.</small></div>
+          <div class="field"><label for="existingDebt">Existing monthly debt</label><input id="existingDebt" placeholder="Enter amount" inputmode="numeric"><small>Used for back-end DTI.</small></div>
+        </div>
       </div>
     </div>
 
     <div class="card section">
       <h2>Outputs</h2>
-      <p class="hint">These update automatically when inputs change or when a JSON file is imported.</p>
+      <p class="hint">Calculated from the current inputs.</p>
 
       <div class="results">
-        <div class="result">
-          <div class="label">Total purchase price</div>
-          <div class="value" id="totalPrice">—</div>
-          <div class="subvalue">Base + lot + structural + design.</div>
+        <div class="result-group">
+          <h3>Purchase</h3>
+          <div class="result">
+            <div class="label">Total purchase price</div>
+            <div class="value" id="totalPrice">—</div>
+            <div class="subvalue">Base + lot + structural + design.</div>
+          </div>
+          <div class="result">
+            <div class="label">Loan amount</div>
+            <div class="value" id="loanAmount">—</div>
+            <div class="subvalue">After the selected down payment.</div>
+          </div>
+          <div class="result">
+            <div class="label">Down payment amount</div>
+            <div class="value" id="downPaymentAmount">—</div>
+            <div class="subvalue">Total purchase price × down payment %.</div>
+          </div>
         </div>
-        <div class="result">
-          <div class="label">Loan amount</div>
-          <div class="value" id="loanAmount">—</div>
-          <div class="subvalue">After the selected down payment.</div>
+
+        <div class="result-group">
+          <h3>Cash Needed</h3>
+          <div class="result">
+            <div class="label">Reservation deposit</div>
+            <div class="value" id="reservationDeposit">—</div>
+            <div class="subvalue">Computed from the price fields.</div>
+          </div>
+          <div class="result">
+            <div class="label">Contract deposit</div>
+            <div class="value" id="contractDeposit">—</div>
+            <div class="subvalue">Computed from the price fields.</div>
+          </div>
+          <div class="result">
+            <div class="label">Design deposit</div>
+            <div class="value" id="designDeposit">—</div>
+            <div class="subvalue">Computed from the design budget.</div>
+          </div>
+          <div class="result warn">
+            <div class="label">Remaining cash to close</div>
+            <div class="value" id="cashToClose">—</div>
+            <div class="subvalue">Down payment + closing costs - prior deposits - remaining credit.</div>
+          </div>
+          <div class="result">
+            <div class="label">Cash remaining</div>
+            <div class="value" id="remainingCash">—</div>
+            <div class="subvalue">Starting cash + savings - deposits - closing.</div>
+          </div>
         </div>
-        <div class="result good">
-          <div class="label">Monthly P&amp;I</div>
-          <div class="value" id="piCustom">—</div>
-          <div class="subvalue">Based on the modeled rate.</div>
+
+        <div class="result-group">
+          <h3>Monthly Payment</h3>
+          <div class="result good">
+            <div class="label">Monthly P&amp;I</div>
+            <div class="value" id="piCustom">—</div>
+            <div class="subvalue">Based on the modeled rate.</div>
+          </div>
+          <div class="result good">
+            <div class="label">Estimated PITIA</div>
+            <div class="value" id="pitia">—</div>
+            <div class="subvalue">P&amp;I + taxes + insurance + HOA.</div>
+          </div>
         </div>
-        <div class="result good">
-          <div class="label">Estimated PITIA</div>
-          <div class="value" id="pitia">—</div>
-          <div class="subvalue">P&amp;I + taxes + insurance + HOA.</div>
-        </div>
-        <div class="result warn">
-          <div class="label">Cash to close</div>
-          <div class="value" id="cashToClose">—</div>
-          <div class="subvalue">Down payment + closing costs - prior deposits - remaining credit.</div>
-        </div>
-        <div class="result">
-          <div class="label">Cash remaining</div>
-          <div class="value" id="remainingCash">—</div>
-          <div class="subvalue">Starting cash + savings - deposits - closing.</div>
-        </div>
-        <div class="result">
-          <div class="label">Front-end DTI</div>
-          <div class="value" id="frontDti">—</div>
-          <div class="subvalue">PITIA ÷ gross monthly income.</div>
-        </div>
-        <div class="result">
-          <div class="label">Back-end DTI</div>
-          <div class="value" id="backDti">—</div>
-          <div class="subvalue">PITIA + existing debt ÷ gross monthly income.</div>
+
+        <div class="result-group">
+          <h3>Qualification</h3>
+          <div class="result">
+            <div class="label">Front-end DTI</div>
+            <div class="value" id="frontDti">—</div>
+            <div class="subvalue">PITIA ÷ gross monthly income.</div>
+          </div>
+          <div class="result">
+            <div class="label">Back-end DTI</div>
+            <div class="value" id="backDti">—</div>
+            <div class="subvalue">PITIA + existing debt ÷ gross monthly income.</div>
+          </div>
         </div>
       </div>
 
@@ -617,9 +622,8 @@
           <li>Review style selections and budget impact.</li>
           <li>Set cabinets, counters, flooring, tile, and fixture choices.</li>
           <li>Track any incremental upgrades before final approval.</li>
-          <li>Export the updated values after each revision.</li>
         </ul>
-        <div class="foot">Design changes should flow back into the JSON state.</div>
+        <div class="foot">Update the design budget when selections change.</div>
       </div>
       <div class="phase">
         <span class="when">Build / close</span>
@@ -671,7 +675,6 @@
             <li>Do not open new credit accounts before closing.</li>
             <li>Keep employment stable.</li>
             <li>Match all wire instructions by phone before sending funds.</li>
-            <li>Save each version of the JSON state.</li>
           </ul>
         </div>
       </div>
@@ -679,7 +682,6 @@
 
     <div class="card section">
       <h2>Scenario comparison</h2>
-      <p class="hint">This section remains as a placeholder for lender scenarios. Populate the fields, export the JSON file, and keep the version that matches your current assumptions.</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -714,7 +716,7 @@
       </div>
       <div style="height:12px"></div>
       <div class="note-box">
-        Keep lender assumptions, incentive tiers, and lock details outside the page title and exported JSON unless you intentionally want them saved as part of the state.
+        Keep lender assumptions, incentive tiers, and lock details with the scenario they apply to.
       </div>
     </div>
   </div>
@@ -758,6 +760,12 @@
     monthlySavings: {}
   };
 
+  const moneyInputIds = new Set([
+    'base','lot','structural','design','flexCash','buydown','closingCosts',
+    'cash','monthlySave','income','existingDebt','taxOverride','insurance','hoa'
+  ]);
+  const percentInputIds = new Set(['down','lockRate']);
+
   const currencyFormatter = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: 'USD',
@@ -784,6 +792,47 @@
     const v = cleanNumber(value);
     return v === '' ? NaN : Number(v);
   };
+
+  function inputKind(el){
+    if (!el || !el.id) return el?.dataset?.monthlySavings ? 'money' : '';
+    if (moneyInputIds.has(el.id)) return 'money';
+    if (percentInputIds.has(el.id)) return 'percent';
+    return '';
+  }
+
+  function plainNumber(value){
+    const parsed = parsedNumber(value);
+    if (!Number.isFinite(parsed)) return '';
+    return Number.isInteger(parsed) ? String(parsed) : String(parsed);
+  }
+
+  function formatInputValue(el){
+    const kind = inputKind(el);
+    if (!kind || !String(el.value ?? '').trim()) return;
+
+    const parsed = parsedNumber(el.value);
+    if (!Number.isFinite(parsed)) return;
+
+    if (kind === 'money') {
+      el.value = currencyFormatter.format(Math.round(parsed));
+    } else if (kind === 'percent') {
+      el.value = `${parsed.toLocaleString(undefined, { maximumFractionDigits: 3 })}%`;
+    }
+  }
+
+  function unformatInputValue(el){
+    const kind = inputKind(el);
+    if (!kind || !String(el.value ?? '').trim()) return;
+
+    const parsed = parsedNumber(el.value);
+    if (!Number.isFinite(parsed)) return;
+    el.value = plainNumber(parsed);
+  }
+
+  function formatPlannerInputs(){
+    fieldIds.forEach(id => formatInputValue(document.getElementById(id)));
+    document.querySelectorAll('[data-monthly-savings]').forEach(formatInputValue);
+  }
 
   function displayMoney(value, active){
     return active && Number.isFinite(value) ? money(value) : '—';
@@ -904,6 +953,7 @@
       text(document.getElementById('reservationDeposit'), '—');
       text(document.getElementById('contractDeposit'), '—');
       text(document.getElementById('designDeposit'), '—');
+      text(document.getElementById('downPaymentAmount'), '—');
       text(document.getElementById('totalPrice'), '—');
       text(document.getElementById('loanAmount'), '—');
       text(document.getElementById('piCustom'), '—');
@@ -943,6 +993,7 @@
     const insurance = Number.isFinite(num('insurance')) ? num('insurance') : 0;
     const hoa = Number.isFinite(num('hoa')) ? num('hoa') : 0;
     const loanAmount = totalPrice * (1 - downPct);
+    const downPaymentAmount = totalPrice * downPct;
     const pAndI = pmt(loanAmount, lockRate, 360);
     const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + hoa;
     const reservationDeposit = base * 0.05 + lot * 0.05;
@@ -972,6 +1023,7 @@
     text(document.getElementById('reservationDeposit'), displayMoney(reservationDeposit, true));
     text(document.getElementById('contractDeposit'), displayMoney(contractDeposit, true));
     text(document.getElementById('designDeposit'), displayMoney(designDeposit, true));
+    text(document.getElementById('downPaymentAmount'), displayMoney(downPaymentAmount, hasValue('down') && totalPrice > 0));
     text(document.getElementById('reservationDepositRow'), displayMoney(reservationDeposit, true));
     text(document.getElementById('contractDepositRow'), displayMoney(contractDeposit, true));
     text(document.getElementById('designDepositRow'), displayMoney(designDeposit, true));
@@ -999,6 +1051,7 @@
   }
 
   function exportJson(){
+    formatPlannerInputs();
     const payload = {
       version: 2,
       fields: {},
@@ -1041,6 +1094,7 @@
     }
 
     recalc();
+    formatPlannerInputs();
   }
 
   function importJsonFile(file){
@@ -1058,6 +1112,23 @@
   }
 
   document.querySelectorAll('input').forEach(el => el.addEventListener('input', recalc));
+  document.addEventListener('focusin', (e) => {
+    if (e.target.matches('input')) {
+      unformatInputValue(e.target);
+    }
+  });
+  document.addEventListener('focusout', (e) => {
+    if (!e.target.matches('input')) return;
+
+    formatInputValue(e.target);
+
+    const monthlySavingsKey = e.target.dataset.monthlySavings;
+    if (monthlySavingsKey) {
+      actuals.monthlySavings[monthlySavingsKey] = e.target.value;
+    }
+
+    recalc();
+  });
   document.getElementById('timelineTable').addEventListener('change', (e) => {
     const monthlySavingsKey = e.target.dataset.monthlySavings;
 
@@ -1076,6 +1147,7 @@
   });
 
   recalc();
+  formatPlannerInputs();
 </script>
 </body>
 </html>
