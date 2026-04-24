@@ -231,6 +231,64 @@
   .result.warn .value{ color:var(--warn); }
   .result.danger .value{ color:var(--danger); }
 
+  .budget-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+  }
+  .budget-summary{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0,1fr));
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .expense-group{
+    border:1px solid var(--line);
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .expense-group h3{
+    margin:0;
+    padding:14px 16px;
+    border-bottom:1px solid var(--line);
+    background:#f8fafc;
+    font-size:14px;
+  }
+  .expense-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 150px;
+    gap:12px;
+    align-items:center;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  .expense-row:last-child{border-bottom:none}
+  .expense-row label{
+    color:var(--text);
+    font-size:14px;
+    font-weight:650;
+  }
+  .expense-row input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px 10px;
+    background:#fff;
+    color:var(--text);
+    font:inherit;
+    font-weight:700;
+    text-align:right;
+  }
+  .expense-row input::placeholder{
+    color:#94a3b8;
+    font-weight:600;
+  }
+  .expense-value{
+    text-align:right;
+    font-weight:800;
+  }
+
   .full{ grid-column:1 / -1; }
   .table-wrap{
     overflow:auto;
@@ -361,8 +419,11 @@
   }
 
   @media (max-width: 1050px){
-    .grid-2, .footer-grid, .checks{
+    .grid-2, .budget-grid, .footer-grid, .checks{
       grid-template-columns:1fr;
+    }
+    .budget-summary{
+      grid-template-columns:repeat(2, minmax(0,1fr));
     }
     .hero-main{
       align-items:flex-start;
@@ -376,7 +437,10 @@
     }
   }
   @media (max-width: 680px){
-    .inputs, .input-group, .results, .result-group, .timeline{
+    .inputs, .input-group, .results, .result-group, .budget-summary, .timeline{
+      grid-template-columns:1fr;
+    }
+    .expense-row{
       grid-template-columns:1fr;
     }
     .wrap{padding:14px}
@@ -531,6 +595,60 @@
       <div style="height:12px"></div>
       <div class="note-box" id="modelNote">
         Fill in the price, incentive, and loan fields to compare cash-to-close, monthly carry, and runway.
+      </div>
+    </div>
+  </div>
+
+  <div class="card section" style="margin-bottom:18px;">
+    <h2>Monthly budget</h2>
+    <p class="hint">Estimated PITIA is included automatically as the housing payment.</p>
+
+    <div class="field full" style="margin-bottom:14px;">
+      <label for="budgetIncome">Monthly income for budget</label>
+      <input id="budgetIncome" placeholder="Uses gross monthly income if blank" inputmode="numeric">
+      <small>Use take-home income here if you want the savings estimate to reflect after-tax cash flow.</small>
+    </div>
+
+    <div class="budget-summary">
+      <div class="result">
+        <div class="label">Budget income</div>
+        <div class="value" id="budgetIncomeSummary">—</div>
+        <div class="subvalue">Budget field, or gross monthly income.</div>
+      </div>
+      <div class="result warn">
+        <div class="label">PITIA</div>
+        <div class="value" id="budgetPitia">—</div>
+        <div class="subvalue">Pulled from monthly payment.</div>
+      </div>
+      <div class="result">
+        <div class="label">Estimated expenses</div>
+        <div class="value" id="monthlyExpensesTotal">—</div>
+        <div class="subvalue">Monthly expenses excluding PITIA.</div>
+      </div>
+      <div class="result good">
+        <div class="label">Available for savings</div>
+        <div class="value" id="monthlySavingsAfterExpenses">—</div>
+        <div class="subvalue">Income - PITIA - expenses.</div>
+      </div>
+    </div>
+
+    <div class="budget-grid">
+      <div class="expense-group">
+        <h3>Housing</h3>
+        <div class="expense-row">
+          <label>Mortgage / PITIA</label>
+          <div class="expense-value" id="budgetPitiaRow">—</div>
+        </div>
+      </div>
+
+      <div class="expense-group">
+        <h3>Monthly expenses</h3>
+        <div class="expense-row"><label for="expenseGroceries">Groceries</label><input id="expenseGroceries" placeholder="$700-$1,000" inputmode="numeric"></div>
+        <div class="expense-row"><label for="expenseUtilitiesComms">Utilities + internet + phones</label><input id="expenseUtilitiesComms" placeholder="$450-$700" inputmode="numeric"></div>
+        <div class="expense-row"><label for="expenseTransport">Gas / transport</label><input id="expenseTransport" placeholder="$300-$700" inputmode="numeric"></div>
+        <div class="expense-row"><label for="expenseAutoInsuranceRegistration">Auto insurance / registration</label><input id="expenseAutoInsuranceRegistration" placeholder="$200-$450" inputmode="numeric"></div>
+        <div class="expense-row"><label for="expenseDiningEntertainment">Dining / entertainment</label><input id="expenseDiningEntertainment" placeholder="$400-$1,000" inputmode="numeric"></div>
+        <div class="expense-row"><label for="expenseMiscMedicalHousehold">Misc / medical / household</label><input id="expenseMiscMedicalHousehold" placeholder="$400-$800" inputmode="numeric"></div>
       </div>
     </div>
   </div>
@@ -753,7 +871,15 @@
   const fieldIds = [
     'base','lot','structural','design','down','lockRate','flexCash','buydown',
     'closingCosts','cash','monthlySave','income','existingDebt','taxOverride',
-    'insurance','hoa','monthsToClose'
+    'insurance','hoa','monthsToClose','budgetIncome','expenseGroceries',
+    'expenseUtilitiesComms','expenseTransport','expenseAutoInsuranceRegistration',
+    'expenseDiningEntertainment','expenseMiscMedicalHousehold'
+  ];
+
+  const monthlyExpenseIds = [
+    'expenseGroceries','expenseUtilitiesComms','expenseTransport',
+    'expenseAutoInsuranceRegistration','expenseDiningEntertainment',
+    'expenseMiscMedicalHousehold'
   ];
 
   const actuals = {
@@ -762,7 +888,10 @@
 
   const moneyInputIds = new Set([
     'base','lot','structural','design','flexCash','buydown','closingCosts',
-    'cash','monthlySave','income','existingDebt','taxOverride','insurance','hoa'
+    'cash','monthlySave','income','existingDebt','taxOverride','insurance','hoa',
+    'budgetIncome','expenseGroceries','expenseUtilitiesComms','expenseTransport',
+    'expenseAutoInsuranceRegistration','expenseDiningEntertainment',
+    'expenseMiscMedicalHousehold'
   ]);
   const percentInputIds = new Set(['down','lockRate']);
 
@@ -840,6 +969,14 @@
 
   function displayPct(value, active){
     return active && Number.isFinite(value) ? value.toFixed(1) + '%' : '—';
+  }
+
+  function sumFields(ids){
+    return ids.reduce((sum, id) => sum + (Number.isFinite(num(id)) ? num(id) : 0), 0);
+  }
+
+  function anyFieldValue(ids){
+    return ids.some(hasValue);
   }
 
   function pmt(principal, annualRatePct, months = 360){
@@ -966,6 +1103,13 @@
       text(document.getElementById('contractDepositRow'), '—');
       text(document.getElementById('designDepositRow'), '—');
       text(document.getElementById('cashToCloseRow'), '—');
+      text(document.getElementById('budgetIncomeSummary'), '—');
+      text(document.getElementById('budgetPitia'), '—');
+      text(document.getElementById('budgetPitiaRow'), '—');
+      text(document.getElementById('monthlyExpensesTotal'), '—');
+      text(document.getElementById('monthlySavingsAfterExpenses'), '—');
+      document.getElementById('monthlySavingsAfterExpenses').closest('.result').classList.remove('danger');
+      document.getElementById('monthlySavingsAfterExpenses').closest('.result').classList.add('good');
       text(document.getElementById('taxHelp'), 'Auto estimate appears after you enter the price fields.');
       setTimelinePlaceholder();
       document.getElementById('modelNote').textContent = 'Fill in the price, incentive, and loan fields to compare cash-to-close, monthly carry, and runway.';
@@ -986,6 +1130,9 @@
     const income = Number.isFinite(num('income')) ? num('income') : 0;
     const existingDebt = Number.isFinite(num('existingDebt')) ? num('existingDebt') : 0;
     const monthsToClose = Number.isFinite(num('monthsToClose')) ? Math.max(0, Math.floor(num('monthsToClose'))) : 0;
+    const budgetIncome = hasValue('budgetIncome')
+      ? (Number.isFinite(num('budgetIncome')) ? num('budgetIncome') : 0)
+      : income;
 
     const totalPrice = base + lot + structural + design;
     const autoTaxes = totalPrice * 0.0065 / 12;
@@ -1011,6 +1158,10 @@
     const endingBalance = cash + totalActualSavings - totalDeposits;
     const frontDti = income > 0 ? (pitia / income) * 100 : NaN;
     const backDti = income > 0 ? ((pitia + existingDebt) / income) * 100 : NaN;
+    const monthlyExpenses = sumFields(monthlyExpenseIds);
+    const monthlyAvailableForSavings = budgetIncome - pitia - monthlyExpenses;
+    const hasBudgetIncome = hasValue('budgetIncome') || hasValue('income');
+    const hasBudgetExpenses = anyFieldValue(monthlyExpenseIds);
 
     text(document.getElementById('totalPrice'), displayMoney(totalPrice, true));
     text(document.getElementById('loanAmount'), displayMoney(loanAmount, true));
@@ -1028,6 +1179,14 @@
     text(document.getElementById('contractDepositRow'), displayMoney(contractDeposit, true));
     text(document.getElementById('designDepositRow'), displayMoney(designDeposit, true));
     text(document.getElementById('cashToCloseRow'), displayMoney(cashToClose, true));
+    text(document.getElementById('budgetIncomeSummary'), displayMoney(budgetIncome, hasBudgetIncome));
+    text(document.getElementById('budgetPitia'), displayMoney(pitia, Number.isFinite(pitia)));
+    text(document.getElementById('budgetPitiaRow'), displayMoney(pitia, Number.isFinite(pitia)));
+    text(document.getElementById('monthlyExpensesTotal'), displayMoney(monthlyExpenses, hasBudgetExpenses));
+    const savingsEl = document.getElementById('monthlySavingsAfterExpenses');
+    text(savingsEl, displayMoney(monthlyAvailableForSavings, hasBudgetIncome || hasBudgetExpenses));
+    savingsEl.closest('.result').classList.toggle('danger', monthlyAvailableForSavings < 0 && (hasBudgetIncome || hasBudgetExpenses));
+    savingsEl.closest('.result').classList.toggle('good', monthlyAvailableForSavings >= 0 || (!hasBudgetIncome && !hasBudgetExpenses));
 
     const taxHelp = hasValue('taxOverride')
       ? 'Manual tax override applied.'
