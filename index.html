@@ -203,6 +203,22 @@
     color:var(--muted);
     font-size:11px;
   }
+  .inline-input{
+    width:150px;
+    max-width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:8px 9px;
+    background:#fff;
+    color:var(--text);
+    font:inherit;
+    font-weight:700;
+    text-align:right;
+  }
+  .inline-input::placeholder{
+    color:#94a3b8;
+    font-weight:600;
+  }
   .results{
     display:grid;
     grid-template-columns:repeat(2, minmax(0,1fr));
@@ -436,7 +452,7 @@
     <div class="card section">
       <h2>Financial model</h2>
       <p class="hint">
-        All fields start blank. Values are serialized by input id when exporting and restored to the same fields when importing.
+        All fields start blank. Values and month-by-month savings overrides are saved in the JSON export and restored on import.
       </p>
 
       <div class="inputs">
@@ -516,7 +532,7 @@
 
   <div class="card section" style="margin-bottom:18px;">
     <h2>Deposit schedule</h2>
-    <p class="hint">These rows are computed from the current input values. Blank inputs remain blank in the exported JSON file.</p>
+    <p class="hint">These rows are computed from the current financial model values. Update the fields above as real numbers replace estimates.</p>
     <div class="table-wrap">
       <table>
         <thead>
@@ -530,27 +546,27 @@
         <tbody>
           <tr>
             <td>Reservation deposit</td>
-            <td>Base + lot</td>
+            <td>5% base + 5% lot</td>
             <td class="right" id="reservationDepositRow">—</td>
-            <td>Computed from the price fields.</td>
+            <td>Update the base and homesite premium fields above as actuals firm up.</td>
           </tr>
           <tr>
             <td>Contract deposit</td>
             <td>5% base + 5% lot + 20% structural</td>
             <td class="right" id="contractDepositRow">—</td>
-            <td>Computed from the price fields.</td>
+            <td>Computed from the current price and structural option values.</td>
           </tr>
           <tr>
             <td>Design deposit</td>
             <td>20% of design budget</td>
             <td class="right" id="designDepositRow">—</td>
-            <td>Computed from the design budget.</td>
+            <td>Update the design budget field above after selections change.</td>
           </tr>
           <tr>
             <td>Cash to close</td>
             <td>Down payment + closing costs - deposits - remaining credit</td>
             <td class="right" id="cashToCloseRow">—</td>
-            <td>Reduced by any incentive left after a buydown.</td>
+            <td>Update closing costs, down payment, and incentive fields above when lender figures change.</td>
           </tr>
         </tbody>
       </table>
@@ -705,21 +721,22 @@
 
   <div class="card section" style="margin-top:18px;">
     <h2>Monthly cash runway</h2>
-    <p class="hint">The table updates from the current inputs. When the inputs are blank, the page shows a placeholder state instead of seeded values.</p>
+    <p class="hint">The table starts as a forecast. Enter actual monthly savings or one-time costs in a row to override that row while preserving the original estimate.</p>
     <div class="table-wrap">
       <table id="timelineTable">
         <thead>
           <tr>
             <th>Month</th>
             <th>Event</th>
-            <th class="right">Deposit / cost</th>
-            <th class="right">Savings added</th>
+            <th class="right">Estimated cost</th>
+            <th class="right">Estimated savings</th>
+            <th class="right">Actual savings</th>
             <th class="right">Ending balance</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td colspan="5" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>
+            <td colspan="6" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>
           </tr>
         </tbody>
       </table>
@@ -737,6 +754,10 @@
     'insurance','hoa','monthsToClose'
   ];
 
+  const actuals = {
+    monthlySavings: {}
+  };
+
   const currencyFormatter = new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency: 'USD',
@@ -747,8 +768,20 @@
   const text = (el, value) => { el.textContent = value; };
   const raw = (id) => (document.getElementById(id)?.value ?? '').trim();
   const hasValue = (id) => raw(id) !== '';
+  const cleanNumber = (value) => String(value ?? '').replace(/[^0-9.\-]/g, '');
+  const escapeAttr = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[char]));
   const num = (id) => {
-    const v = raw(id).replace(/[^0-9.\-]/g, '');
+    const v = cleanNumber(raw(id));
+    return v === '' ? NaN : Number(v);
+  };
+  const parsedNumber = (value) => {
+    const v = cleanNumber(value);
     return v === '' ? NaN : Number(v);
   };
 
@@ -771,15 +804,15 @@
     const tbody = document.querySelector('#timelineTable tbody');
     tbody.innerHTML = '';
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td colspan="5" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>';
+    tr.innerHTML = '<td colspan="6" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>';
     tbody.appendChild(tr);
   }
 
-  function renderTimeline({ cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose }){
+  function renderTimeline({ cash, monthlySave, monthsToClose, reservationDeposit, contractDeposit, designDeposit, cashToClose }){
     const tbody = document.querySelector('#timelineTable tbody');
     tbody.innerHTML = '';
 
-    const anyActive = [cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose]
+    const anyActive = [cash, monthlySave, monthsToClose, reservationDeposit, contractDeposit, designDeposit, cashToClose]
       .some(v => Number.isFinite(v) && v !== 0);
 
     if (!anyActive){
@@ -790,18 +823,41 @@
     let balance = Number.isFinite(cash) ? cash : 0;
     const rows = [];
 
-    rows.push({ month:'Now', event:'Starting cash', cost:null, save:null, ending:balance });
-    balance -= Number.isFinite(contractDeposit) ? contractDeposit : 0;
-    rows.push({ month:'Contract', event:'Contract deposit', cost:Number.isFinite(contractDeposit) ? contractDeposit : null, save:null, ending:balance });
+    rows.push({ key:'start', month:'Now', event:'Starting cash', cost:null, save:null, ending:balance });
+
+    const reservationCost = Number.isFinite(reservationDeposit) ? reservationDeposit : null;
+    balance -= reservationCost == null ? 0 : reservationCost;
+    rows.push({
+      key:'reservation',
+      month:'Reservation',
+      event:'Reservation deposit',
+      cost:reservationCost,
+      save:null,
+      ending:balance
+    });
+
+    const contractCost = Number.isFinite(contractDeposit) ? contractDeposit : null;
+    balance -= contractCost == null ? 0 : contractCost;
+    rows.push({
+      key:'contract',
+      month:'Contract',
+      event:'Contract deposit',
+      cost:contractCost,
+      save:null,
+      ending:balance
+    });
 
     const months = Number.isFinite(monthsToClose) ? Math.max(0, Math.floor(monthsToClose)) : 0;
     for (let i = 1; i <= months; i++){
       const isDesignMonth = i === 2;
       const isClosingMonth = i === months;
+      const key = `month-${i}`;
       const cost = isDesignMonth ? (Number.isFinite(designDeposit) ? designDeposit : 0) : (isClosingMonth ? (Number.isFinite(cashToClose) ? cashToClose : 0) : 0);
       const save = Number.isFinite(monthlySave) ? monthlySave : 0;
-      balance = balance + save - cost;
+      const liveSave = Number.isFinite(parsedNumber(actuals.monthlySavings[key])) ? parsedNumber(actuals.monthlySavings[key]) : save;
+      balance = balance + liveSave - cost;
       rows.push({
+        key,
         month: `Month ${i}`,
         event: isDesignMonth ? 'Design deposit' : (isClosingMonth ? 'Closing' : 'Savings month'),
         cost: cost || null,
@@ -810,20 +866,30 @@
       });
     }
 
-    if (rows.length === 2 && months === 0){
-      balance -= Number.isFinite(cashToClose) ? cashToClose : 0;
-      rows.push({ month:'Closing', event:'Closing', cost:Number.isFinite(cashToClose) ? cashToClose : null, save:null, ending:balance });
+    if (months === 0){
+      const closingCost = Number.isFinite(cashToClose) ? cashToClose : null;
+      balance -= closingCost == null ? 0 : closingCost;
+      rows.push({
+        key:'closing',
+        month:'Closing',
+        event:'Closing',
+        cost:closingCost,
+        save:null,
+        ending:balance
+      });
     }
 
     rows.forEach((r, idx) => {
       const tr = document.createElement('tr');
-      if (idx === 1) tr.style.background = '#fafcff';
+      if (r.event.includes('deposit')) tr.style.background = '#fafcff';
       if (r.event === 'Closing') tr.style.background = '#fff7ed';
+      const actualSavingsValue = actuals.monthlySavings[r.key] ?? '';
       tr.innerHTML = `
         <td>${r.month}</td>
         <td>${r.event}</td>
         <td class="right">${r.cost == null ? '-' : money(r.cost)}</td>
         <td class="right">${r.save == null ? '-' : money(r.save)}</td>
+        <td class="right">${r.save == null ? '-' : `<input class="inline-input" data-monthly-savings="${r.key}" placeholder="Actual" inputmode="numeric" value="${escapeAttr(actualSavingsValue)}">`}</td>
         <td class="right">${r.ending < 0 ? '<span style="color:#b91c1c;font-weight:700">' + money(r.ending) + '</span>' : money(r.ending)}</td>
       `;
       tbody.appendChild(tr);
@@ -831,7 +897,8 @@
   }
 
   function recalc(){
-    const anyInput = fieldIds.some(hasValue);
+    const anyInput = fieldIds.some(hasValue) ||
+      Object.values(actuals.monthlySavings).some(value => String(value ?? '').trim() !== '');
 
     if (!anyInput){
       text(document.getElementById('reservationDeposit'), '—');
@@ -878,14 +945,19 @@
     const loanAmount = totalPrice * (1 - downPct);
     const pAndI = pmt(loanAmount, lockRate, 360);
     const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + hoa;
+    const reservationDeposit = base * 0.05 + lot * 0.05;
     const contractDeposit = base * 0.05 + lot * 0.05 + structural * 0.20;
     const designDeposit = design * 0.20;
-    const reservationDeposit = base * 0.05 + lot * 0.05;
-    const priorDeposits = contractDeposit + designDeposit;
+    const priorDeposits = reservationDeposit + contractDeposit + designDeposit;
     const flexCreditRemaining = Math.max(0, flexCash - buydown);
     const cashToClose = Math.max(0, (totalPrice * downPct) + closingCosts - priorDeposits - flexCreditRemaining);
+    const totalActualSavings = Array.from({ length: monthsToClose }, (_, idx) => {
+      const key = `month-${idx + 1}`;
+      const value = parsedNumber(actuals.monthlySavings[key]);
+      return Number.isFinite(value) ? value : monthlySave;
+    }).reduce((sum, value) => sum + value, 0);
     const totalDeposits = priorDeposits + cashToClose;
-    const endingBalance = cash + (monthlySave * monthsToClose) - totalDeposits;
+    const endingBalance = cash + totalActualSavings - totalDeposits;
     const frontDti = income > 0 ? (pitia / income) * 100 : NaN;
     const backDti = income > 0 ? ((pitia + existingDebt) / income) * 100 : NaN;
 
@@ -919,6 +991,7 @@
       cash,
       monthlySave,
       monthsToClose,
+      reservationDeposit,
       contractDeposit,
       designDeposit,
       cashToClose
@@ -927,8 +1000,13 @@
 
   function exportJson(){
     const payload = {
-      version: 1,
-      fields: {}
+      version: 2,
+      fields: {},
+      actuals: {
+        monthlySavings: Object.fromEntries(
+          Object.entries(actuals.monthlySavings).filter(([, value]) => String(value ?? '').trim() !== '')
+        )
+      }
     };
     fieldIds.forEach(id => {
       payload.fields[id] = document.getElementById(id).value;
@@ -950,10 +1028,17 @@
       : data;
 
     fieldIds.forEach(id => {
-      if (Object.prototype.hasOwnProperty.call(source, id)) {
+      if (source && Object.prototype.hasOwnProperty.call(source, id)) {
         document.getElementById(id).value = source[id] ?? '';
       }
     });
+
+    actuals.monthlySavings = {};
+    if (data && typeof data === 'object' && data.actuals && typeof data.actuals.monthlySavings === 'object') {
+      Object.entries(data.actuals.monthlySavings).forEach(([key, value]) => {
+        actuals.monthlySavings[key] = value ?? '';
+      });
+    }
 
     recalc();
   }
@@ -973,6 +1058,15 @@
   }
 
   document.querySelectorAll('input').forEach(el => el.addEventListener('input', recalc));
+  document.getElementById('timelineTable').addEventListener('change', (e) => {
+    const monthlySavingsKey = e.target.dataset.monthlySavings;
+
+    if (monthlySavingsKey){
+      actuals.monthlySavings[monthlySavingsKey] = e.target.value;
+    }
+
+    recalc();
+  });
   document.getElementById('exportBtn').addEventListener('click', exportJson);
   document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
   document.getElementById('importFile').addEventListener('change', (e) => {
