@@ -559,11 +559,6 @@
         <div class="result-group">
           <h3>Cash Needed</h3>
           <div class="result">
-            <div class="label">Reservation deposit</div>
-            <div class="value" id="reservationDeposit">—</div>
-            <div class="subvalue">Computed from the price fields.</div>
-          </div>
-          <div class="result">
             <div class="label">Contract deposit</div>
             <div class="value" id="contractDeposit">—</div>
             <div class="subvalue">Computed from the price fields.</div>
@@ -721,12 +716,6 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td>Reservation deposit</td>
-            <td>5% base + 5% lot</td>
-            <td class="right" id="reservationDepositRow">—</td>
-            <td>Update the base and homesite premium fields above as actuals firm up.</td>
-          </tr>
           <tr>
             <td>Contract deposit</td>
             <td>5% base + 5% lot + 20% structural</td>
@@ -1075,11 +1064,11 @@
     tbody.appendChild(tr);
   }
 
-  function renderTimeline({ cash, monthlySave, monthsToClose, reservationDeposit, contractDeposit, designDeposit, cashToClose }){
+  function renderTimeline({ cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose }){
     const tbody = document.querySelector('#timelineTable tbody');
     tbody.innerHTML = '';
 
-    const anyActive = [cash, monthlySave, monthsToClose, reservationDeposit, contractDeposit, designDeposit, cashToClose]
+    const anyActive = [cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose]
       .some(v => Number.isFinite(v) && v !== 0);
 
     if (!anyActive){
@@ -1102,17 +1091,6 @@
       month:'Now',
       event:'Starting cash',
       cost:null,
-      save:null,
-      ending:balance
-    });
-
-    const reservationCost = Number.isFinite(reservationDeposit) ? reservationDeposit : null;
-    balance -= reservationCost == null ? 0 : reservationCost;
-    pushRow({
-      key:'reservation',
-      month:'Reservation',
-      event:'Reservation deposit',
-      cost:reservationCost,
       save:null,
       ending:balance
     });
@@ -1181,7 +1159,6 @@
       Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '');
 
     if (!anyInput){
-      text(document.getElementById('reservationDeposit'), '—');
       text(document.getElementById('contractDeposit'), '—');
       text(document.getElementById('designDeposit'), '—');
       text(document.getElementById('downPaymentAmount'), '—');
@@ -1194,7 +1171,6 @@
       text(document.getElementById('remainingCash'), '—');
       text(document.getElementById('frontDti'), '—');
       text(document.getElementById('backDti'), '—');
-      text(document.getElementById('reservationDepositRow'), '—');
       text(document.getElementById('contractDepositRow'), '—');
       text(document.getElementById('designDepositRow'), '—');
       text(document.getElementById('cashToCloseRow'), '—');
@@ -1240,10 +1216,9 @@
     const pAndI = pmt(loanAmount, lockRate, 360);
     const pmiMonthly = downPct > 0 && downPct < 0.20 ? (loanAmount * pmiRate / 12) : 0;
     const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + pmiMonthly + hoa;
-    const reservationDeposit = base * 0.05 + lot * 0.05;
     const contractDeposit = base * 0.05 + lot * 0.05 + structural * 0.20;
     const designDeposit = design * 0.20;
-    const priorDeposits = reservationDeposit + contractDeposit + designDeposit;
+    const priorDeposits = contractDeposit + designDeposit;
     const flexCreditRemaining = Math.max(0, flexCash - buydown);
     const cashToClose = Math.max(0, (totalPrice * downPct) + closingCosts - priorDeposits - flexCreditRemaining);
     const totalActualSavings = Array.from({ length: monthsToClose }, () => monthlySave)
@@ -1267,11 +1242,9 @@
     text(document.getElementById('remainingCash'), displayMoney(endingBalance, true));
     text(document.getElementById('frontDti'), displayPct(frontDti, Number.isFinite(frontDti)));
     text(document.getElementById('backDti'), displayPct(backDti, Number.isFinite(backDti)));
-    text(document.getElementById('reservationDeposit'), displayMoney(reservationDeposit, true));
     text(document.getElementById('contractDeposit'), displayMoney(contractDeposit, true));
     text(document.getElementById('designDeposit'), displayMoney(designDeposit, true));
     text(document.getElementById('downPaymentAmount'), displayMoney(downPaymentAmount, hasValue('down') && totalPrice > 0));
-    text(document.getElementById('reservationDepositRow'), displayMoney(reservationDeposit, true));
     text(document.getElementById('contractDepositRow'), displayMoney(contractDeposit, true));
     text(document.getElementById('designDepositRow'), displayMoney(designDeposit, true));
     text(document.getElementById('cashToCloseRow'), displayMoney(cashToClose, true));
@@ -1303,7 +1276,6 @@
       cash,
       monthlySave,
       monthsToClose,
-      reservationDeposit,
       contractDeposit,
       designDeposit,
       cashToClose
@@ -1349,6 +1321,7 @@
     actuals.endingBalances = {};
     if (data && typeof data === 'object' && data.actuals && typeof data.actuals.endingBalances === 'object') {
       Object.entries(data.actuals.endingBalances).forEach(([key, value]) => {
+        if (key === 'reservation') return;
         actuals.endingBalances[key] = value ?? '';
       });
     }
