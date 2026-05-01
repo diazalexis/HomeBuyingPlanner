@@ -1068,12 +1068,35 @@
     const tbody = document.querySelector('#timelineTable tbody');
     tbody.innerHTML = '';
 
+    const rows = buildTimelineRows({ cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose });
+    if (!rows.length){
+      setTimelinePlaceholder();
+      return;
+    }
+
+    rows.forEach((r) => {
+      const tr = document.createElement('tr');
+      if (r.event.includes('deposit')) tr.style.background = '#fafcff';
+      if (r.event === 'Closing') tr.style.background = '#fff7ed';
+      const actualEndingValue = actuals.endingBalances[r.key] ?? '';
+      const endingMarkup = `<input class="inline-input" data-ending-balance="${r.key}" placeholder="${money(r.ending)}" inputmode="numeric" value="${escapeAttr(actualEndingValue)}">`;
+      tr.innerHTML = `
+        <td>${r.month}</td>
+        <td>${r.event}</td>
+        <td class="right">${r.cost == null ? '-' : money(r.cost)}</td>
+        <td class="right">${r.save == null ? '-' : money(r.save)}</td>
+        <td class="right">${endingMarkup}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function buildTimelineRows({ cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose }){
     const anyActive = [cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose]
       .some(v => Number.isFinite(v) && v !== 0);
 
     if (!anyActive){
-      setTimelinePlaceholder();
-      return;
+      return [];
     }
 
     let balance = Number.isFinite(cash) ? cash : 0;
@@ -1137,21 +1160,157 @@
       });
     }
 
-    rows.forEach((r, idx) => {
-      const tr = document.createElement('tr');
-      if (r.event.includes('deposit')) tr.style.background = '#fafcff';
-      if (r.event === 'Closing') tr.style.background = '#fff7ed';
-      const actualEndingValue = actuals.endingBalances[r.key] ?? '';
-      const endingMarkup = `<input class="inline-input" data-ending-balance="${r.key}" placeholder="${money(r.ending)}" inputmode="numeric" value="${escapeAttr(actualEndingValue)}">`;
-      tr.innerHTML = `
-        <td>${r.month}</td>
-        <td>${r.event}</td>
-        <td class="right">${r.cost == null ? '-' : money(r.cost)}</td>
-        <td class="right">${r.save == null ? '-' : money(r.save)}</td>
-        <td class="right">${endingMarkup}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+    return rows;
+  }
+
+  function valueOrNull(value){
+    return Number.isFinite(value) ? value : null;
+  }
+
+  function outputValue(id, label, value){
+    return {
+      label,
+      value: valueOrNull(value),
+      display: document.getElementById(id)?.textContent ?? ''
+    };
+  }
+
+  function buildOutputSnapshot(){
+    const anyInput = fieldIds.some(hasValue) ||
+      Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '');
+
+    const base = Number.isFinite(num('base')) ? num('base') : 0;
+    const lot = Number.isFinite(num('lot')) ? num('lot') : 0;
+    const structural = Number.isFinite(num('structural')) ? num('structural') : 0;
+    const design = Number.isFinite(num('design')) ? num('design') : 0;
+    const downPct = (Number.isFinite(num('down')) ? num('down') : 0) / 100;
+    const lockRate = Number.isFinite(num('lockRate')) ? num('lockRate') : 0;
+    const pmiRate = (Number.isFinite(num('pmiRate')) ? num('pmiRate') : 0.5) / 100;
+    const flexCash = Number.isFinite(num('flexCash')) ? num('flexCash') : 0;
+    const buydown = Math.max(0, Math.min(Number.isFinite(num('buydown')) ? num('buydown') : 0, flexCash));
+    const closingCosts = Number.isFinite(num('closingCosts')) ? num('closingCosts') : 0;
+    const cash = Number.isFinite(num('cash')) ? num('cash') : 0;
+    const monthlySave = Number.isFinite(num('monthlySave')) ? num('monthlySave') : 0;
+    const income = Number.isFinite(num('income')) ? num('income') : 0;
+    const existingDebt = Number.isFinite(num('existingDebt')) ? num('existingDebt') : 0;
+    const monthsToClose = Number.isFinite(num('monthsToClose')) ? Math.max(0, Math.floor(num('monthsToClose'))) : 0;
+    const budgetIncome = sumFields(budgetIncomeIds);
+
+    const totalPrice = base + lot + structural + design;
+    const autoTaxes = totalPrice * 0.0065 / 12;
+    const taxes = hasValue('taxOverride') ? (Number.isFinite(num('taxOverride')) ? num('taxOverride') : 0) : autoTaxes;
+    const insurance = Number.isFinite(num('insurance')) ? num('insurance') : 0;
+    const hoa = Number.isFinite(num('hoa')) ? num('hoa') : 0;
+    const loanAmount = totalPrice * (1 - downPct);
+    const downPaymentAmount = totalPrice * downPct;
+    const pAndI = pmt(loanAmount, lockRate, 360);
+    const pmiMonthly = downPct > 0 && downPct < 0.20 ? (loanAmount * pmiRate / 12) : 0;
+    const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + pmiMonthly + hoa;
+    const contractDeposit = base * 0.05 + lot * 0.05 + structural * 0.20;
+    const designDeposit = design * 0.20;
+    const priorDeposits = contractDeposit + designDeposit;
+    const flexCreditRemaining = Math.max(0, flexCash - buydown);
+    const cashToClose = Math.max(0, (totalPrice * downPct) + closingCosts - priorDeposits - flexCreditRemaining);
+    const totalActualSavings = Array.from({ length: monthsToClose }, () => monthlySave)
+      .reduce((sum, value) => sum + value, 0);
+    const totalDeposits = priorDeposits + cashToClose;
+    const endingBalance = cash + totalActualSavings - totalDeposits;
+    const frontDti = income > 0 ? (pitia / income) * 100 : NaN;
+    const backDti = income > 0 ? ((pitia + existingDebt) / income) * 100 : NaN;
+    const fixedExpenses = sumFields(fixedExpenseIds);
+    const flexibleExpenses = sumFields(flexibleExpenseIds);
+    const monthlyAvailableForSavings = budgetIncome - pitia - fixedExpenses - flexibleExpenses;
+
+    const timelineRows = buildTimelineRows({
+      cash,
+      monthlySave,
+      monthsToClose,
+      contractDeposit,
+      designDeposit,
+      cashToClose
+    }).map(row => ({
+      key: row.key,
+      month: row.month,
+      event: row.event,
+      cost: row.cost,
+      costDisplay: row.cost == null ? '-' : money(row.cost),
+      savings: row.save,
+      savingsDisplay: row.save == null ? '-' : money(row.save),
+      endingBalance: row.ending,
+      endingBalanceDisplay: money(row.ending),
+      actualEndingBalance: valueOrNull(parsedNumber(actuals.endingBalances[row.key])),
+      actualEndingBalanceInput: actuals.endingBalances[row.key] ?? ''
+    }));
+
+    return {
+      active: anyInput,
+      generatedAt: new Date().toISOString(),
+      priceAndLoan: {
+        totalPrice: outputValue('totalPrice', 'Total price', totalPrice),
+        loanAmount: outputValue('loanAmount', 'Loan amount', loanAmount),
+        downPaymentAmount: outputValue('downPaymentAmount', 'Down payment amount', downPaymentAmount),
+        downPaymentPercent: valueOrNull(downPct * 100),
+        modeledRatePercent: hasValue('lockRate') ? valueOrNull(lockRate) : null
+      },
+      depositsAndCash: {
+        contractDeposit: outputValue('contractDeposit', 'Contract deposit', contractDeposit),
+        designDeposit: outputValue('designDeposit', 'Design deposit', designDeposit),
+        priorDeposits: {
+          label: 'Prior deposits',
+          value: valueOrNull(priorDeposits),
+          display: money(priorDeposits)
+        },
+        flexCreditRemaining: {
+          label: 'Remaining incentive after buydown',
+          value: valueOrNull(flexCreditRemaining),
+          display: money(flexCreditRemaining)
+        },
+        cashToClose: outputValue('cashToClose', 'Cash to close', cashToClose),
+        remainingCash: outputValue('remainingCash', 'Remaining cash', endingBalance)
+      },
+      monthlyPayment: {
+        principalAndInterest: outputValue('piCustom', 'Principal and interest', pAndI),
+        taxes: {
+          label: hasValue('taxOverride') ? 'Monthly property taxes override' : 'Estimated monthly property taxes',
+          value: valueOrNull(taxes),
+          display: money(taxes)
+        },
+        insurance: {
+          label: 'Monthly insurance',
+          value: valueOrNull(insurance),
+          display: money(insurance)
+        },
+        pmiMonthly: outputValue('pmiMonthly', 'Monthly PMI', pmiMonthly),
+        hoa: {
+          label: 'Monthly HOA',
+          value: valueOrNull(hoa),
+          display: money(hoa)
+        },
+        pitia: outputValue('pitia', 'PITIA', pitia)
+      },
+      affordability: {
+        frontDti: outputValue('frontDti', 'Front-end DTI', frontDti),
+        backDti: outputValue('backDti', 'Back-end DTI', backDti)
+      },
+      monthlyBudget: {
+        budgetIncome: outputValue('budgetIncomeSummary', 'Net monthly income for budget', budgetIncome),
+        pitia: outputValue('budgetPitia', 'Monthly PITIA', pitia),
+        fixedExpenses: outputValue('fixedExpensesTotal', 'Fixed expenses', fixedExpenses),
+        flexibleExpenses: outputValue('flexibleExpensesTotal', 'Flexible expenses', flexibleExpenses),
+        monthlySavingsAfterExpenses: outputValue('monthlySavingsAfterExpenses', 'Monthly savings after expenses', monthlyAvailableForSavings)
+      },
+      timeline: {
+        monthsToClose,
+        totalModeledSavingsBeforeClose: valueOrNull(totalActualSavings),
+        totalDepositsAndCashToClose: valueOrNull(totalDeposits),
+        rows: timelineRows
+      },
+      notes: {
+        taxHelp: document.getElementById('taxHelp')?.textContent ?? '',
+        pmiHelp: document.getElementById('pmiHelp')?.textContent ?? '',
+        modelNote: document.getElementById('modelNote')?.textContent ?? ''
+      }
+    };
   }
 
   function recalc(){
@@ -1285,13 +1444,14 @@
   function exportJson(){
     formatPlannerInputs();
     const payload = {
-      version: 2,
+      version: 3,
       fields: {},
       actuals: {
         endingBalances: Object.fromEntries(
           Object.entries(actuals.endingBalances).filter(([, value]) => String(value ?? '').trim() !== '')
         )
-      }
+      },
+      outputs: buildOutputSnapshot()
     };
     fieldIds.forEach(id => {
       payload.fields[id] = document.getElementById(id).value;
