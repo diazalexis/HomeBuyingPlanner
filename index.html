@@ -164,6 +164,29 @@
     color:var(--muted);
     font-size:11px;
   }
+  .field.status{
+    background:#fff;
+  }
+  .field.status strong{
+    display:block;
+    font-size:14px;
+    line-height:1.35;
+  }
+  .field.status span{
+    display:block;
+    margin-top:4px;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.35;
+  }
+  .status-line{
+    margin-top:8px;
+    font-size:12px;
+    line-height:1.4;
+    color:var(--muted);
+  }
+  .status-line.warn{color:var(--warn);font-weight:700}
+  .status-line.danger{color:var(--danger);font-weight:800}
   .inline-input{
     width:150px;
     max-width:100%;
@@ -179,6 +202,25 @@
   .inline-input::placeholder{
     color:#94a3b8;
     font-weight:600;
+  }
+  .mini-input{
+    width:100%;
+    min-width:94px;
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:7px 8px;
+    background:#fff;
+    color:var(--text);
+    font:inherit;
+    font-weight:700;
+    text-align:right;
+  }
+  .scenario-name{
+    min-width:180px;
+    text-align:left;
+  }
+  .table-action{
+    white-space:nowrap;
   }
   .results{
     display:grid;
@@ -504,9 +546,11 @@
           <h3>Financing and Credits</h3>
           <div class="field"><label for="down">Down payment %</label><input id="down" placeholder="Enter %" inputmode="decimal"><small>Example format: 20</small></div>
           <div class="field"><label for="lockRate">Modeled rate %</label><input id="lockRate" placeholder="Enter rate" inputmode="decimal"><small>Used for the payment estimate.</small></div>
-          <div class="field"><label for="flexCash">Builder credit / incentive</label><input id="flexCash" placeholder="Enter amount" inputmode="numeric"><small>Total incentive amount available.</small></div>
+          <div class="field"><label for="flexCash">Total builder/lender incentive</label><input id="flexCash" placeholder="Enter amount" inputmode="numeric"><small>Total incentive amount available.</small></div>
           <div class="field"><label for="buydown">Incentive used for buydown</label><input id="buydown" placeholder="Enter amount" inputmode="numeric"><small>Remaining amount may offset cash-to-close.</small></div>
-          <div class="field"><label for="closingCosts">Closing costs</label><input id="closingCosts" placeholder="Enter amount" inputmode="numeric"><small>Replace with the Loan Estimate when available.</small></div>
+          <div class="field"><label for="closingCostCredit">Incentive used toward closing costs</label><input id="closingCostCredit" placeholder="Auto remaining" inputmode="numeric"><small id="closingCreditHelp">Auto uses incentive remaining after buydown.</small></div>
+          <div class="field status"><label>Unused incentive</label><strong id="unusedIncentive">—</strong><span id="incentiveHelp">Buydown + closing-cost credit cannot exceed total incentive.</span></div>
+          <div class="field"><label for="closingCosts">Closing costs</label><input id="closingCosts" placeholder="Enter amount" inputmode="numeric"><small id="closingHelp">Enter the lender estimate or your planning total.</small></div>
         </div>
 
         <div class="input-group">
@@ -518,17 +562,14 @@
 
         <div class="input-group">
           <h3>Monthly Costs</h3>
-          <div class="field"><label for="taxOverride">Property tax / month</label><input id="taxOverride" placeholder="Auto" inputmode="numeric"><small id="taxHelp">Auto estimate appears after you enter the price fields.</small></div>
+          <div class="field"><label for="taxOverride">Manual monthly property tax override</label><input id="taxOverride" placeholder="Auto" inputmode="numeric"><small id="taxHelp">Auto estimate appears after you enter the price fields.</small></div>
+          <div class="field"><label for="assessmentRatio">Assessment ratio %</label><input id="assessmentRatio" placeholder="35" inputmode="decimal"><small>Auto-tax formula uses price × assessment ratio × tax rate ÷ 12.</small></div>
+          <div class="field"><label for="propertyTaxRate">Property tax rate %</label><input id="propertyTaxRate" placeholder="3.66" inputmode="decimal"><small>Editable planning rate.</small></div>
           <div class="field"><label for="insurance">Insurance / month</label><input id="insurance" placeholder="Enter amount" inputmode="numeric"><small>Editable placeholder.</small></div>
           <div class="field"><label for="hoa">HOA / month</label><input id="hoa" placeholder="Enter amount" inputmode="numeric"><small>Include only if applicable.</small></div>
           <div class="field"><label for="pmiRate">PMI annual rate %</label><input id="pmiRate" placeholder="Auto" inputmode="decimal"><small id="pmiHelp">Applies only below 20% down.</small></div>
         </div>
 
-        <div class="input-group">
-          <h3>Qualification</h3>
-          <div class="field"><label for="income">Gross monthly income</label><input id="income" placeholder="Enter amount" inputmode="numeric"><small>Used for DTI calculations.</small></div>
-          <div class="field"><label for="existingDebt">Existing monthly debt</label><input id="existingDebt" placeholder="Enter amount" inputmode="numeric"><small>Used for back-end DTI.</small></div>
-        </div>
       </div>
     </div>
 
@@ -571,12 +612,12 @@
           <div class="result warn">
             <div class="label">Remaining cash to close</div>
             <div class="value" id="cashToClose">—</div>
-            <div class="subvalue">Down payment + closing costs - prior deposits - remaining credit.</div>
+            <div class="subvalue">Down payment + closing costs - prior deposits - closing-cost credit.</div>
           </div>
           <div class="result">
             <div class="label">Cash remaining</div>
             <div class="value" id="remainingCash">—</div>
-            <div class="subvalue">Starting cash + savings - deposits - closing.</div>
+            <div class="subvalue" id="cashBufferStatus">Starting cash + savings - deposits - closing.</div>
           </div>
         </div>
 
@@ -599,19 +640,6 @@
           </div>
         </div>
 
-        <div class="result-group">
-          <h3>Qualification</h3>
-          <div class="result">
-            <div class="label">Front-end DTI</div>
-            <div class="value" id="frontDti">—</div>
-            <div class="subvalue">PITIA ÷ gross monthly income.</div>
-          </div>
-          <div class="result">
-            <div class="label">Back-end DTI</div>
-            <div class="value" id="backDti">—</div>
-            <div class="subvalue">PITIA + existing debt ÷ gross monthly income.</div>
-          </div>
-        </div>
       </div>
 
       <div style="height:12px"></div>
@@ -730,7 +758,7 @@
           </tr>
           <tr>
             <td>Cash to close</td>
-            <td>Down payment + closing costs - deposits - remaining credit</td>
+            <td>Down payment + closing costs - deposits - closing-cost credit</td>
             <td class="right" id="cashToCloseRow">—</td>
             <td>Update closing costs, down payment, and incentive fields above when lender figures change.</td>
           </tr>
@@ -844,41 +872,38 @@
     <div class="card section">
       <h2>Scenario comparison</h2>
       <div class="table-wrap">
-        <table>
+        <table id="scenarioTable">
           <thead>
             <tr>
               <th>Scenario</th>
-              <th class="right">Rate</th>
+              <th class="right">Rate %</th>
+              <th class="right">Buydown</th>
+              <th class="right">Down %</th>
+              <th class="right">PMI annual %</th>
+              <th class="right">Closing-credit used</th>
+              <th class="right">Loan amount</th>
               <th class="right">P&amp;I</th>
-              <th class="right">Incentive used</th>
+              <th class="right">PMI</th>
+              <th class="right">PITIA</th>
+              <th class="right">Cash to close</th>
+              <th class="right">Cash remaining</th>
+              <th class="center">Use</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>Scenario A</td>
-              <td class="right">—</td>
-              <td class="right">—</td>
-              <td class="right">—</td>
-            </tr>
-            <tr>
-              <td>Scenario B</td>
-              <td class="right">—</td>
-              <td class="right">—</td>
-              <td class="right">—</td>
-            </tr>
-            <tr>
-              <td>Scenario C</td>
-              <td class="right">—</td>
-              <td class="right">—</td>
-              <td class="right">—</td>
-            </tr>
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
       <div style="height:12px"></div>
       <div class="note-box">
-        Keep lender assumptions, incentive tiers, and lock details with the scenario they apply to.
+        Edit scenarios directly, then use a row to populate the main calculator rate, buydown, down payment, PMI, and closing-credit fields.
       </div>
+    </div>
+  </div>
+
+  <div class="card section" style="margin-top:18px;">
+    <h2>Assumptions summary</h2>
+    <div class="note-box" id="assumptionsSummary">
+      Enter values to see the assumptions driving the model.
     </div>
   </div>
 
@@ -910,30 +935,34 @@
 </div>
 
 <script>
+  const ASSUMPTIONS = {
+    assessmentRatioPct: 35,
+    propertyTaxRatePct: 3.66,
+    defaultPmiAnnualPct: 0.115,
+    loanTermMonths: 360
+  };
+
   const fieldIds = [
-    'base','lot','structural','design','down','lockRate','flexCash','buydown',
-    'closingCosts','cash','monthlySave','income','existingDebt','taxOverride','pmiRate',
-    'insurance','hoa','monthsToClose','budgetIncomePerson1','budgetIncomePerson2',
+    'base','lot','structural','design','down','lockRate','flexCash','buydown','closingCostCredit',
+    'closingCosts','cash','monthlySave','taxOverride','assessmentRatio','propertyTaxRate',
+    'pmiRate','insurance','hoa','monthsToClose','budgetIncomePerson1','budgetIncomePerson2',
     'expenseAutoPaymentPerson1','expenseAutoPaymentPerson2','expenseGarbagePerson1',
-    'expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2',
-    'expenseSewerPerson1','expenseSewerPerson2',
-    'expenseGasElectricPerson1','expenseGasElectricPerson2','expenseInternetCablePerson1',
-    'expenseInternetCablePerson2','expensePhonePerson1','expensePhonePerson2',
-    'expenseFixedMiscPerson1','expenseFixedMiscPerson2',
+    'expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2','expenseSewerPerson1',
+    'expenseSewerPerson2','expenseGasElectricPerson1','expenseGasElectricPerson2',
+    'expenseInternetCablePerson1','expenseInternetCablePerson2','expensePhonePerson1',
+    'expensePhonePerson2','expenseFixedMiscPerson1','expenseFixedMiscPerson2',
     'expenseGroceriesPerson1','expenseGroceriesPerson2','expenseRestaurantsBarsPerson1',
     'expenseRestaurantsBarsPerson2','expenseEntertainmentPerson1','expenseEntertainmentPerson2',
     'expensePersonalPerson1','expensePersonalPerson2','expensePetsPerson1','expensePetsPerson2',
     'expenseShoppingPerson1','expenseShoppingPerson2','expenseFlexibleMiscPerson1',
     'expenseFlexibleMiscPerson2'
   ];
-
   const fixedExpenseIds = [
     'expenseAutoPaymentPerson1','expenseAutoPaymentPerson2','expenseGarbagePerson1',
-    'expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2',
-    'expenseSewerPerson1','expenseSewerPerson2',
-    'expenseGasElectricPerson1','expenseGasElectricPerson2','expenseInternetCablePerson1',
-    'expenseInternetCablePerson2','expensePhonePerson1','expensePhonePerson2',
-    'expenseFixedMiscPerson1','expenseFixedMiscPerson2'
+    'expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2','expenseSewerPerson1',
+    'expenseSewerPerson2','expenseGasElectricPerson1','expenseGasElectricPerson2',
+    'expenseInternetCablePerson1','expenseInternetCablePerson2','expensePhonePerson1',
+    'expensePhonePerson2','expenseFixedMiscPerson1','expenseFixedMiscPerson2'
   ];
   const flexibleExpenseIds = [
     'expenseGroceriesPerson1','expenseGroceriesPerson2','expenseRestaurantsBarsPerson1',
@@ -944,88 +973,65 @@
   ];
   const budgetIncomeIds = ['budgetIncomePerson1','budgetIncomePerson2'];
 
-  const actuals = {
-    endingBalances: {}
-  };
+  const actuals = { endingBalances: {} };
+  let activeScenario = '';
+  let scenarios = [
+    { id:'a', name:'A. 6.49% no buydown', rate:6.49, buydown:0, down:18, pmiRate:0.115, closingCostCredit:'' },
+    { id:'b', name:'B. 5.99% with $10k buydown', rate:5.99, buydown:10000, down:18, pmiRate:0.115, closingCostCredit:'' },
+    { id:'c', name:'C. 5.625% with $20k buydown', rate:5.625, buydown:20000, down:18, pmiRate:0.115, closingCostCredit:'' },
+    { id:'d', name:'D. 4.99% with $35k buydown', rate:4.99, buydown:35000, down:18, pmiRate:0.115, closingCostCredit:0 },
+    { id:'e', name:'E. 4.80% optimistic 780+ assumption', rate:4.80, buydown:35000, down:18, pmiRate:0.115, closingCostCredit:0 }
+  ];
 
-  const moneyInputIds = new Set([
-    'base','lot','structural','design','flexCash','buydown','closingCosts',
-    'cash','monthlySave','income','existingDebt','taxOverride','insurance','hoa',
-    'budgetIncomePerson1','budgetIncomePerson2','expenseAutoPaymentPerson1','expenseAutoPaymentPerson2',
-    'expenseGarbagePerson1','expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2',
-    'expenseSewerPerson1','expenseSewerPerson2',
-    'expenseGasElectricPerson1','expenseGasElectricPerson2','expenseInternetCablePerson1',
-    'expenseInternetCablePerson2','expensePhonePerson1','expensePhonePerson2',
-    'expenseFixedMiscPerson1','expenseFixedMiscPerson2',
-    'expenseGroceriesPerson1','expenseGroceriesPerson2','expenseRestaurantsBarsPerson1',
-    'expenseRestaurantsBarsPerson2','expenseEntertainmentPerson1','expenseEntertainmentPerson2',
-    'expensePersonalPerson1','expensePersonalPerson2','expensePetsPerson1','expensePetsPerson2',
-    'expenseShoppingPerson1','expenseShoppingPerson2','expenseFlexibleMiscPerson1',
-    'expenseFlexibleMiscPerson2'
-  ]);
-  const percentInputIds = new Set(['down','lockRate','pmiRate']);
+  const moneyInputIds = new Set(fieldIds.filter(id => ![
+    'down','lockRate','pmiRate','assessmentRatio','propertyTaxRate','monthsToClose'
+  ].includes(id)));
+  const percentInputIds = new Set(['down','lockRate','pmiRate','assessmentRatio','propertyTaxRate']);
+  const integerInputIds = new Set(['monthsToClose']);
 
-  const currencyFormatter = new Intl.NumberFormat(undefined, {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  });
-
+  const currencyFormatter = new Intl.NumberFormat(undefined, { style:'currency', currency:'USD', maximumFractionDigits:0 });
   const money = (n) => currencyFormatter.format(Math.round(Number(n) || 0));
-  const text = (el, value) => { el.textContent = value; };
+  const text = (el, value) => { if (el) el.textContent = value; };
   const raw = (id) => (document.getElementById(id)?.value ?? '').trim();
   const hasValue = (id) => raw(id) !== '';
   const cleanNumber = (value) => String(value ?? '').replace(/[^0-9.\-]/g, '');
-  const escapeAttr = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;',
-    "'":'&#39;'
-  }[char]));
-  const num = (id) => {
-    const v = cleanNumber(raw(id));
-    return v === '' ? NaN : Number(v);
-  };
   const parsedNumber = (value) => {
     const v = cleanNumber(value);
     return v === '' ? NaN : Number(v);
   };
+  const num = (id) => parsedNumber(raw(id));
+  const valueOrNull = (value) => Number.isFinite(value) ? value : null;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const inputNumber = (id, fallback = 0) => Number.isFinite(num(id)) ? num(id) : fallback;
+  const defaultedNumber = (id, fallback) => hasValue(id) && Number.isFinite(num(id)) ? num(id) : fallback;
+  const sumFields = (ids) => ids.reduce((sum, id) => sum + inputNumber(id, 0), 0);
+  const anyFieldValue = (ids) => ids.some(hasValue);
 
   function inputKind(el){
-    if (!el || !el.id) return el?.dataset?.endingBalance ? 'money' : '';
+    if (!el) return '';
+    if (el.dataset.kind) return el.dataset.kind;
+    if (el.dataset.endingBalance) return 'money';
     if (moneyInputIds.has(el.id)) return 'money';
     if (percentInputIds.has(el.id)) return 'percent';
+    if (integerInputIds.has(el.id)) return 'integer';
     return '';
-  }
-
-  function plainNumber(value){
-    const parsed = parsedNumber(value);
-    if (!Number.isFinite(parsed)) return '';
-    return Number.isInteger(parsed) ? String(parsed) : String(parsed);
   }
 
   function formatInputValue(el){
     const kind = inputKind(el);
     if (!kind || !String(el.value ?? '').trim()) return;
-
     const parsed = parsedNumber(el.value);
     if (!Number.isFinite(parsed)) return;
-
-    if (kind === 'money') {
-      el.value = currencyFormatter.format(Math.round(parsed));
-    } else if (kind === 'percent') {
-      el.value = `${parsed.toLocaleString(undefined, { maximumFractionDigits: 3 })}%`;
-    }
+    if (kind === 'money') el.value = currencyFormatter.format(Math.round(parsed));
+    if (kind === 'percent') el.value = `${parsed.toLocaleString(undefined, { maximumFractionDigits:3 })}%`;
+    if (kind === 'integer') el.value = String(Math.max(0, Math.floor(parsed)));
   }
 
   function unformatInputValue(el){
     const kind = inputKind(el);
     if (!kind || !String(el.value ?? '').trim()) return;
-
     const parsed = parsedNumber(el.value);
-    if (!Number.isFinite(parsed)) return;
-    el.value = plainNumber(parsed);
+    if (Number.isFinite(parsed)) el.value = String(parsed);
   }
 
   function formatPlannerInputs(){
@@ -1033,430 +1039,293 @@
     document.querySelectorAll('[data-ending-balance]').forEach(formatInputValue);
   }
 
-  function displayMoney(value, active){
-    return active && Number.isFinite(value) ? money(value) : '—';
-  }
-
-  function displayPct(value, active){
-    return active && Number.isFinite(value) ? value.toFixed(1) + '%' : '—';
-  }
-
-  function sumFields(ids){
-    return ids.reduce((sum, id) => sum + (Number.isFinite(num(id)) ? num(id) : 0), 0);
-  }
-
-  function anyFieldValue(ids){
-    return ids.some(hasValue);
-  }
-
-  function pmt(principal, annualRatePct, months = 360){
+  function pmt(principal, annualRatePct, months = ASSUMPTIONS.loanTermMonths){
     const r = (annualRatePct / 100) / 12;
-    if (!isFinite(principal) || !isFinite(annualRatePct) || principal <= 0) return NaN;
-    if (!isFinite(r) || r === 0) return principal / months;
+    if (!Number.isFinite(principal) || !Number.isFinite(annualRatePct) || principal <= 0) return NaN;
+    if (!Number.isFinite(r) || r === 0) return principal / months;
     return principal * r / (1 - Math.pow(1 + r, -months));
   }
 
-  function setTimelinePlaceholder(){
-    const tbody = document.querySelector('#timelineTable tbody');
-    tbody.innerHTML = '';
-    const tr = document.createElement('tr');
-    tr.innerHTML = '<td colspan="5" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td>';
-    tbody.appendChild(tr);
+  function displayMoney(value, active = true){ return active && Number.isFinite(value) ? money(value) : '—'; }
+  function displayPct(value, active = true){ return active && Number.isFinite(value) ? `${value.toFixed(1)}%` : '—'; }
+
+  function cashBufferStatus(value){
+    if (!Number.isFinite(value)) return { label:'Cash buffer not available yet.', level:'' };
+    if (value < 0) return { label:'Shortfall / not enough cash.', level:'danger' };
+    if (value < 10000) return { label:'Very thin buffer.', level:'danger' };
+    if (value < 20000) return { label:'Tight but workable buffer.', level:'warn' };
+    if (value < 30000) return { label:'Moderate buffer.', level:'' };
+    return { label:'Stronger buffer.', level:'good' };
   }
 
-  function renderTimeline({ cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose }){
-    const tbody = document.querySelector('#timelineTable tbody');
-    tbody.innerHTML = '';
+  function calculateForInputs(source){
+    const totalPrice = source.base + source.lot + source.structural + source.design;
+    const downPct = clamp(source.downPct, 0, 100) / 100;
+    const ratePct = Math.max(0, source.ratePct);
+    const loanAmount = Math.max(0, totalPrice * (1 - downPct));
+    const downPaymentAmount = Math.max(0, totalPrice * downPct);
+    const autoMonthlyTax = totalPrice * (source.assessmentRatioPct / 100) * (source.propertyTaxRatePct / 100) / 12;
+    const monthlyPropertyTax = Number.isFinite(source.taxOverride) ? Math.max(0, source.taxOverride) : Math.max(0, autoMonthlyTax);
+    const monthlyInsurance = Math.max(0, source.insurance);
+    const hoa = Math.max(0, source.hoa);
+    const pAndI = pmt(loanAmount, ratePct);
+    const pmiRatePct = downPct > 0 && downPct < 0.20 ? Math.max(0, source.pmiRatePct) : 0;
+    const pmiMonthly = pmiRatePct > 0 ? loanAmount * (pmiRatePct / 100) / 12 : 0;
+    const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + monthlyPropertyTax + monthlyInsurance + pmiMonthly + hoa;
+    const closingCosts = Math.max(0, source.closingCosts);
+    const totalIncentive = Math.max(0, source.flexCash);
+    const buydown = clamp(source.buydown, 0, totalIncentive);
+    const maxClosingCredit = Math.max(0, totalIncentive - buydown);
+    const requestedClosingCredit = Number.isFinite(source.closingCostCredit) ? Math.max(0, source.closingCostCredit) : maxClosingCredit;
+    const closingCostCredit = Math.min(requestedClosingCredit, maxClosingCredit, closingCosts);
+    const unusedIncentive = Math.max(0, totalIncentive - buydown - closingCostCredit);
+    const contractDeposit = source.base * 0.05 + source.lot * 0.05 + source.structural * 0.20;
+    const designDeposit = source.design * 0.20;
+    const priorDeposits = contractDeposit + designDeposit;
+    const cashToClose = Math.max(0, downPaymentAmount + closingCosts - priorDeposits - closingCostCredit);
+    const monthsToClose = Math.max(0, Math.floor(source.monthsToClose));
+    const savingsBeforeClose = Math.max(0, source.monthlySave) * monthsToClose;
+    const remainingCash = source.cash + savingsBeforeClose - priorDeposits - cashToClose;
+    const buffer = cashBufferStatus(remainingCash);
 
-    const rows = buildTimelineRows({ cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose });
-    if (!rows.length){
-      setTimelinePlaceholder();
-      return;
-    }
+    return {
+      totalPrice, downPct: downPct * 100, ratePct, loanAmount, downPaymentAmount,
+      autoMonthlyTax, monthlyPropertyTax, taxMethod: Number.isFinite(source.taxOverride) ? 'Manual override' : 'Auto formula',
+      monthlyInsurance, hoa, pAndI, pmiRatePct, pmiMonthly, pitia, closingCosts,
+      closingCostMethod: 'Single closing-cost total',
+      totalIncentive, buydown, closingCostCredit, unusedIncentive, contractDeposit, designDeposit,
+      priorDeposits, cashToClose, monthsToClose, savingsBeforeClose, remainingCash,
+      buffer
+    };
+  }
 
-    rows.forEach((r) => {
-      const tr = document.createElement('tr');
-      if (r.event.includes('deposit')) tr.style.background = '#fafcff';
-      if (r.event === 'Closing') tr.style.background = '#fff7ed';
-      const actualEndingValue = actuals.endingBalances[r.key] ?? '';
-      const endingMarkup = `<input class="inline-input" data-ending-balance="${r.key}" placeholder="${money(r.ending)}" inputmode="numeric" value="${escapeAttr(actualEndingValue)}">`;
-      tr.innerHTML = `
-        <td>${r.month}</td>
-        <td>${r.event}</td>
-        <td class="right">${r.cost == null ? '-' : money(r.cost)}</td>
-        <td class="right">${r.save == null ? '-' : money(r.save)}</td>
-        <td class="right">${endingMarkup}</td>
-      `;
-      tbody.appendChild(tr);
+  function readMainInputs(){
+    return {
+      base: inputNumber('base'), lot: inputNumber('lot'), structural: inputNumber('structural'),
+      design: inputNumber('design'), downPct: defaultedNumber('down', 0),
+      ratePct: defaultedNumber('lockRate', 0), pmiRatePct: defaultedNumber('pmiRate', ASSUMPTIONS.defaultPmiAnnualPct),
+      flexCash: inputNumber('flexCash'), buydown: inputNumber('buydown'),
+      closingCostCredit: hasValue('closingCostCredit') ? inputNumber('closingCostCredit') : NaN,
+      closingCosts: inputNumber('closingCosts'),
+      cash: inputNumber('cash'), monthlySave: inputNumber('monthlySave'),
+      monthsToClose: defaultedNumber('monthsToClose', 0),
+      taxOverride: hasValue('taxOverride') ? inputNumber('taxOverride') : NaN,
+      assessmentRatioPct: defaultedNumber('assessmentRatio', ASSUMPTIONS.assessmentRatioPct),
+      propertyTaxRatePct: defaultedNumber('propertyTaxRate', ASSUMPTIONS.propertyTaxRatePct),
+      insurance: inputNumber('insurance'), hoa: inputNumber('hoa')
+    };
+  }
+
+  function calculateModelState(){
+    const anyInput = fieldIds.some(hasValue) || Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '');
+    const inputs = readMainInputs();
+    const core = calculateForInputs(inputs);
+    const fixedExpenses = sumFields(fixedExpenseIds);
+    const flexibleExpenses = sumFields(flexibleExpenseIds);
+    const budgetIncome = sumFields(budgetIncomeIds);
+    const monthlyAvailableForSavings = budgetIncome - core.pitia - fixedExpenses - flexibleExpenses;
+    const scenarioResults = scenarios.map(scenario => {
+      const scenarioInputs = {
+        ...inputs,
+        downPct: Number.isFinite(parsedNumber(scenario.down)) ? parsedNumber(scenario.down) : inputs.downPct,
+        ratePct: Number.isFinite(parsedNumber(scenario.rate)) ? parsedNumber(scenario.rate) : inputs.ratePct,
+        pmiRatePct: Number.isFinite(parsedNumber(scenario.pmiRate)) ? parsedNumber(scenario.pmiRate) : inputs.pmiRatePct,
+        buydown: Number.isFinite(parsedNumber(scenario.buydown)) ? parsedNumber(scenario.buydown) : inputs.buydown,
+        closingCostCredit: Number.isFinite(parsedNumber(scenario.closingCostCredit)) ? parsedNumber(scenario.closingCostCredit) : NaN
+      };
+      return { ...scenario, model: calculateForInputs(scenarioInputs) };
     });
+    const warnings = [
+      ...(core.buffer.level === 'danger' || core.buffer.level === 'warn' ? [core.buffer.label] : []),
+      ...(inputs.downPct < 0 || inputs.downPct > 100 ? ['Down payment must be between 0% and 100%.'] : []),
+      ...(inputs.ratePct < 0 ? ['Rate must be non-negative.'] : []),
+      ...(inputs.monthsToClose < 0 ? ['Months to close must be a non-negative integer.'] : []),
+      ...(inputNumber('buydown') + (hasValue('closingCostCredit') ? inputNumber('closingCostCredit') : 0) > inputNumber('flexCash') ? ['Buydown plus closing-cost credit exceeds total incentive; credit is capped in calculations.'] : [])
+    ];
+    return {
+      active: anyInput,
+      generatedAt: new Date().toISOString(),
+      assumptions: ASSUMPTIONS,
+      inputs,
+      core,
+      budget: { budgetIncome, fixedExpenses, flexibleExpenses, monthlyAvailableForSavings },
+      scenarios: scenarioResults,
+      warnings,
+      activeScenario
+    };
   }
 
-  function buildTimelineRows({ cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose }){
-    const anyActive = [cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose]
-      .some(v => Number.isFinite(v) && v !== 0);
-
-    if (!anyActive){
-      return [];
-    }
-
+  function buildTimelineRows(state){
+    const { cash, monthlySave } = state.inputs;
+    const { monthsToClose, contractDeposit, designDeposit, cashToClose } = state.core;
+    const anyActive = [cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose].some(v => Number.isFinite(v) && v !== 0);
+    if (!anyActive) return [];
     let balance = Number.isFinite(cash) ? cash : 0;
     const rows = [];
-
     const pushRow = (row) => {
       const override = parsedNumber(actuals.endingBalances[row.key]);
       const ending = Number.isFinite(override) ? override : row.ending;
-      if (Number.isFinite(override)) balance = override;
       rows.push({ ...row, ending });
+      balance = ending;
     };
-
-    pushRow({
-      key:'start',
-      month:'Now',
-      event:'Starting cash',
-      cost:null,
-      save:null,
-      ending:balance
-    });
-
-    const contractCost = Number.isFinite(contractDeposit) ? contractDeposit : null;
-    balance -= contractCost == null ? 0 : contractCost;
-    pushRow({
-      key:'contract',
-      month:'Contract',
-      event:'Contract deposit',
-      cost:contractCost,
-      save:null,
-      ending:balance
-    });
-
-    const months = Number.isFinite(monthsToClose) ? Math.max(0, Math.floor(monthsToClose)) : 0;
-    for (let i = 1; i <= months; i++){
+    pushRow({ key:'start', month:'Now', event:'Starting cash', cost:null, save:null, ending:balance });
+    balance -= contractDeposit;
+    pushRow({ key:'contract', month:'Contract', event:'Contract deposit', cost:contractDeposit, save:null, ending:balance });
+    for (let i = 1; i <= monthsToClose; i++){
       const isDesignMonth = i === 2;
-      const isClosingMonth = i === months;
-      const key = `month-${i}`;
-      const cost = isDesignMonth ? (Number.isFinite(designDeposit) ? designDeposit : 0) : (isClosingMonth ? (Number.isFinite(cashToClose) ? cashToClose : 0) : 0);
+      const isClosingMonth = i === monthsToClose;
+      const cost = isDesignMonth ? designDeposit : (isClosingMonth ? cashToClose : 0);
       const save = Number.isFinite(monthlySave) ? monthlySave : 0;
       balance = balance + save - cost;
       pushRow({
-        key,
-        month: `Month ${i}`,
-        event: isDesignMonth ? 'Design deposit' : (isClosingMonth ? 'Closing' : 'Savings month'),
+        key:`month-${i}`,
+        month:`Month ${i}`,
+        event:isDesignMonth ? 'Design deposit' : (isClosingMonth ? 'Closing' : 'Savings month'),
         cost: cost || null,
         save: save || null,
         ending:balance
       });
     }
-
-    if (months === 0){
-      const closingCost = Number.isFinite(cashToClose) ? cashToClose : null;
-      balance -= closingCost == null ? 0 : closingCost;
-      pushRow({
-        key:'closing',
-        month:'Closing',
-        event:'Closing',
-        cost:closingCost,
-        save:null,
-        ending:balance
-      });
+    if (monthsToClose === 0){
+      balance -= cashToClose;
+      pushRow({ key:'closing', month:'Closing', event:'Closing', cost:cashToClose, save:null, ending:balance });
     }
-
     return rows;
   }
 
-  function valueOrNull(value){
-    return Number.isFinite(value) ? value : null;
-  }
-
-  function outputValue(id, label, value){
-    return {
-      label,
-      value: valueOrNull(value),
-      display: document.getElementById(id)?.textContent ?? ''
-    };
-  }
-
-  function buildOutputSnapshot(){
-    const anyInput = fieldIds.some(hasValue) ||
-      Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '');
-
-    const base = Number.isFinite(num('base')) ? num('base') : 0;
-    const lot = Number.isFinite(num('lot')) ? num('lot') : 0;
-    const structural = Number.isFinite(num('structural')) ? num('structural') : 0;
-    const design = Number.isFinite(num('design')) ? num('design') : 0;
-    const downPct = (Number.isFinite(num('down')) ? num('down') : 0) / 100;
-    const lockRate = Number.isFinite(num('lockRate')) ? num('lockRate') : 0;
-    const pmiRate = (Number.isFinite(num('pmiRate')) ? num('pmiRate') : 0.5) / 100;
-    const flexCash = Number.isFinite(num('flexCash')) ? num('flexCash') : 0;
-    const buydown = Math.max(0, Math.min(Number.isFinite(num('buydown')) ? num('buydown') : 0, flexCash));
-    const closingCosts = Number.isFinite(num('closingCosts')) ? num('closingCosts') : 0;
-    const cash = Number.isFinite(num('cash')) ? num('cash') : 0;
-    const monthlySave = Number.isFinite(num('monthlySave')) ? num('monthlySave') : 0;
-    const income = Number.isFinite(num('income')) ? num('income') : 0;
-    const existingDebt = Number.isFinite(num('existingDebt')) ? num('existingDebt') : 0;
-    const monthsToClose = Number.isFinite(num('monthsToClose')) ? Math.max(0, Math.floor(num('monthsToClose'))) : 0;
-    const budgetIncome = sumFields(budgetIncomeIds);
-
-    const totalPrice = base + lot + structural + design;
-    const autoTaxes = totalPrice * 0.0065 / 12;
-    const taxes = hasValue('taxOverride') ? (Number.isFinite(num('taxOverride')) ? num('taxOverride') : 0) : autoTaxes;
-    const insurance = Number.isFinite(num('insurance')) ? num('insurance') : 0;
-    const hoa = Number.isFinite(num('hoa')) ? num('hoa') : 0;
-    const loanAmount = totalPrice * (1 - downPct);
-    const downPaymentAmount = totalPrice * downPct;
-    const pAndI = pmt(loanAmount, lockRate, 360);
-    const pmiMonthly = downPct > 0 && downPct < 0.20 ? (loanAmount * pmiRate / 12) : 0;
-    const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + pmiMonthly + hoa;
-    const contractDeposit = base * 0.05 + lot * 0.05 + structural * 0.20;
-    const designDeposit = design * 0.20;
-    const priorDeposits = contractDeposit + designDeposit;
-    const flexCreditRemaining = Math.max(0, flexCash - buydown);
-    const cashToClose = Math.max(0, (totalPrice * downPct) + closingCosts - priorDeposits - flexCreditRemaining);
-    const totalActualSavings = Array.from({ length: monthsToClose }, () => monthlySave)
-      .reduce((sum, value) => sum + value, 0);
-    const totalDeposits = priorDeposits + cashToClose;
-    const endingBalance = cash + totalActualSavings - totalDeposits;
-    const frontDti = income > 0 ? (pitia / income) * 100 : NaN;
-    const backDti = income > 0 ? ((pitia + existingDebt) / income) * 100 : NaN;
-    const fixedExpenses = sumFields(fixedExpenseIds);
-    const flexibleExpenses = sumFields(flexibleExpenseIds);
-    const monthlyAvailableForSavings = budgetIncome - pitia - fixedExpenses - flexibleExpenses;
-
-    const timelineRows = buildTimelineRows({
-      cash,
-      monthlySave,
-      monthsToClose,
-      contractDeposit,
-      designDeposit,
-      cashToClose
-    }).map(row => ({
-      key: row.key,
-      month: row.month,
-      event: row.event,
-      cost: row.cost,
-      costDisplay: row.cost == null ? '-' : money(row.cost),
-      savings: row.save,
-      savingsDisplay: row.save == null ? '-' : money(row.save),
-      endingBalance: row.ending,
-      endingBalanceDisplay: money(row.ending),
-      actualEndingBalance: valueOrNull(parsedNumber(actuals.endingBalances[row.key])),
-      actualEndingBalanceInput: actuals.endingBalances[row.key] ?? ''
-    }));
-
-    return {
-      active: anyInput,
-      generatedAt: new Date().toISOString(),
-      priceAndLoan: {
-        totalPrice: outputValue('totalPrice', 'Total price', totalPrice),
-        loanAmount: outputValue('loanAmount', 'Loan amount', loanAmount),
-        downPaymentAmount: outputValue('downPaymentAmount', 'Down payment amount', downPaymentAmount),
-        downPaymentPercent: valueOrNull(downPct * 100),
-        modeledRatePercent: hasValue('lockRate') ? valueOrNull(lockRate) : null
-      },
-      depositsAndCash: {
-        contractDeposit: outputValue('contractDeposit', 'Contract deposit', contractDeposit),
-        designDeposit: outputValue('designDeposit', 'Design deposit', designDeposit),
-        priorDeposits: {
-          label: 'Prior deposits',
-          value: valueOrNull(priorDeposits),
-          display: money(priorDeposits)
-        },
-        flexCreditRemaining: {
-          label: 'Remaining incentive after buydown',
-          value: valueOrNull(flexCreditRemaining),
-          display: money(flexCreditRemaining)
-        },
-        cashToClose: outputValue('cashToClose', 'Cash to close', cashToClose),
-        remainingCash: outputValue('remainingCash', 'Remaining cash', endingBalance)
-      },
-      monthlyPayment: {
-        principalAndInterest: outputValue('piCustom', 'Principal and interest', pAndI),
-        taxes: {
-          label: hasValue('taxOverride') ? 'Monthly property taxes override' : 'Estimated monthly property taxes',
-          value: valueOrNull(taxes),
-          display: money(taxes)
-        },
-        insurance: {
-          label: 'Monthly insurance',
-          value: valueOrNull(insurance),
-          display: money(insurance)
-        },
-        pmiMonthly: outputValue('pmiMonthly', 'Monthly PMI', pmiMonthly),
-        hoa: {
-          label: 'Monthly HOA',
-          value: valueOrNull(hoa),
-          display: money(hoa)
-        },
-        pitia: outputValue('pitia', 'PITIA', pitia)
-      },
-      affordability: {
-        frontDti: outputValue('frontDti', 'Front-end DTI', frontDti),
-        backDti: outputValue('backDti', 'Back-end DTI', backDti)
-      },
-      monthlyBudget: {
-        budgetIncome: outputValue('budgetIncomeSummary', 'Net monthly income for budget', budgetIncome),
-        pitia: outputValue('budgetPitia', 'Monthly PITIA', pitia),
-        fixedExpenses: outputValue('fixedExpensesTotal', 'Fixed expenses', fixedExpenses),
-        flexibleExpenses: outputValue('flexibleExpensesTotal', 'Flexible expenses', flexibleExpenses),
-        monthlySavingsAfterExpenses: outputValue('monthlySavingsAfterExpenses', 'Monthly savings after expenses', monthlyAvailableForSavings)
-      },
-      timeline: {
-        monthsToClose,
-        totalModeledSavingsBeforeClose: valueOrNull(totalActualSavings),
-        totalDepositsAndCashToClose: valueOrNull(totalDeposits),
-        rows: timelineRows
-      },
-      notes: {
-        taxHelp: document.getElementById('taxHelp')?.textContent ?? '',
-        pmiHelp: document.getElementById('pmiHelp')?.textContent ?? '',
-        modelNote: document.getElementById('modelNote')?.textContent ?? ''
-      }
-    };
-  }
-
-  function recalc(){
-    const anyInput = fieldIds.some(hasValue) ||
-      Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '');
-
-    if (!anyInput){
-      text(document.getElementById('contractDeposit'), '—');
-      text(document.getElementById('designDeposit'), '—');
-      text(document.getElementById('downPaymentAmount'), '—');
-      text(document.getElementById('totalPrice'), '—');
-      text(document.getElementById('loanAmount'), '—');
-      text(document.getElementById('piCustom'), '—');
-      text(document.getElementById('pitia'), '—');
-      text(document.getElementById('pmiMonthly'), '—');
-      text(document.getElementById('cashToClose'), '—');
-      text(document.getElementById('remainingCash'), '—');
-      text(document.getElementById('frontDti'), '—');
-      text(document.getElementById('backDti'), '—');
-      text(document.getElementById('contractDepositRow'), '—');
-      text(document.getElementById('designDepositRow'), '—');
-      text(document.getElementById('cashToCloseRow'), '—');
-      text(document.getElementById('budgetIncomeSummary'), '—');
-      text(document.getElementById('budgetPitia'), '—');
-      text(document.getElementById('budgetPitiaRow'), '—');
-      text(document.getElementById('fixedExpensesTotal'), '—');
-      text(document.getElementById('flexibleExpensesTotal'), '—');
-      text(document.getElementById('monthlySavingsAfterExpenses'), '—');
-      document.getElementById('monthlySavingsAfterExpenses').closest('.result').classList.remove('danger');
-      document.getElementById('monthlySavingsAfterExpenses').closest('.result').classList.add('good');
-      text(document.getElementById('taxHelp'), 'Auto estimate appears after you enter the price fields.');
-      text(document.getElementById('pmiHelp'), 'Applies only below 20% down.');
-      setTimelinePlaceholder();
-      document.getElementById('modelNote').textContent = 'Fill in the price, incentive, and loan fields to compare cash-to-close, monthly carry, and runway.';
+  function renderTimeline(state){
+    const tbody = document.querySelector('#timelineTable tbody');
+    tbody.innerHTML = '';
+    const rows = buildTimelineRows(state);
+    if (!rows.length){
+      tbody.innerHTML = '<tr><td colspan="5" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td></tr>';
       return;
     }
-
-    const base = Number.isFinite(num('base')) ? num('base') : 0;
-    const lot = Number.isFinite(num('lot')) ? num('lot') : 0;
-    const structural = Number.isFinite(num('structural')) ? num('structural') : 0;
-    const design = Number.isFinite(num('design')) ? num('design') : 0;
-    const downPct = (Number.isFinite(num('down')) ? num('down') : 0) / 100;
-    const lockRate = Number.isFinite(num('lockRate')) ? num('lockRate') : 0;
-    const pmiRate = (Number.isFinite(num('pmiRate')) ? num('pmiRate') : 0.5) / 100;
-    const flexCash = Number.isFinite(num('flexCash')) ? num('flexCash') : 0;
-    const buydown = Math.max(0, Math.min(Number.isFinite(num('buydown')) ? num('buydown') : 0, flexCash));
-    const closingCosts = Number.isFinite(num('closingCosts')) ? num('closingCosts') : 0;
-    const cash = Number.isFinite(num('cash')) ? num('cash') : 0;
-    const monthlySave = Number.isFinite(num('monthlySave')) ? num('monthlySave') : 0;
-    const income = Number.isFinite(num('income')) ? num('income') : 0;
-    const existingDebt = Number.isFinite(num('existingDebt')) ? num('existingDebt') : 0;
-    const monthsToClose = Number.isFinite(num('monthsToClose')) ? Math.max(0, Math.floor(num('monthsToClose'))) : 0;
-    const budgetIncome = sumFields(budgetIncomeIds);
-
-    const totalPrice = base + lot + structural + design;
-    const autoTaxes = totalPrice * 0.0065 / 12;
-    const taxes = hasValue('taxOverride') ? (Number.isFinite(num('taxOverride')) ? num('taxOverride') : 0) : autoTaxes;
-    const insurance = Number.isFinite(num('insurance')) ? num('insurance') : 0;
-    const hoa = Number.isFinite(num('hoa')) ? num('hoa') : 0;
-    const loanAmount = totalPrice * (1 - downPct);
-    const downPaymentAmount = totalPrice * downPct;
-    const pAndI = pmt(loanAmount, lockRate, 360);
-    const pmiMonthly = downPct > 0 && downPct < 0.20 ? (loanAmount * pmiRate / 12) : 0;
-    const pitia = (Number.isFinite(pAndI) ? pAndI : 0) + taxes + insurance + pmiMonthly + hoa;
-    const contractDeposit = base * 0.05 + lot * 0.05 + structural * 0.20;
-    const designDeposit = design * 0.20;
-    const priorDeposits = contractDeposit + designDeposit;
-    const flexCreditRemaining = Math.max(0, flexCash - buydown);
-    const cashToClose = Math.max(0, (totalPrice * downPct) + closingCosts - priorDeposits - flexCreditRemaining);
-    const totalActualSavings = Array.from({ length: monthsToClose }, () => monthlySave)
-      .reduce((sum, value) => sum + value, 0);
-    const totalDeposits = priorDeposits + cashToClose;
-    const endingBalance = cash + totalActualSavings - totalDeposits;
-    const frontDti = income > 0 ? (pitia / income) * 100 : NaN;
-    const backDti = income > 0 ? ((pitia + existingDebt) / income) * 100 : NaN;
-    const fixedExpenses = sumFields(fixedExpenseIds);
-    const flexibleExpenses = sumFields(flexibleExpenseIds);
-    const monthlyAvailableForSavings = budgetIncome - pitia - fixedExpenses - flexibleExpenses;
-    const hasBudgetIncome = anyFieldValue(budgetIncomeIds);
-    const hasBudgetExpenses = anyFieldValue(fixedExpenseIds) || anyFieldValue(flexibleExpenseIds);
-
-    text(document.getElementById('totalPrice'), displayMoney(totalPrice, true));
-    text(document.getElementById('loanAmount'), displayMoney(loanAmount, true));
-    text(document.getElementById('piCustom'), displayMoney(pAndI, Number.isFinite(pAndI)));
-    text(document.getElementById('pitia'), displayMoney(pitia, true));
-    text(document.getElementById('pmiMonthly'), displayMoney(pmiMonthly, downPct > 0 && downPct < 0.20));
-    text(document.getElementById('cashToClose'), displayMoney(cashToClose, true));
-    text(document.getElementById('remainingCash'), displayMoney(endingBalance, true));
-    text(document.getElementById('frontDti'), displayPct(frontDti, Number.isFinite(frontDti)));
-    text(document.getElementById('backDti'), displayPct(backDti, Number.isFinite(backDti)));
-    text(document.getElementById('contractDeposit'), displayMoney(contractDeposit, true));
-    text(document.getElementById('designDeposit'), displayMoney(designDeposit, true));
-    text(document.getElementById('downPaymentAmount'), displayMoney(downPaymentAmount, hasValue('down') && totalPrice > 0));
-    text(document.getElementById('contractDepositRow'), displayMoney(contractDeposit, true));
-    text(document.getElementById('designDepositRow'), displayMoney(designDeposit, true));
-    text(document.getElementById('cashToCloseRow'), displayMoney(cashToClose, true));
-    text(document.getElementById('budgetIncomeSummary'), displayMoney(budgetIncome, hasBudgetIncome));
-    text(document.getElementById('budgetPitia'), displayMoney(pitia, Number.isFinite(pitia)));
-    text(document.getElementById('budgetPitiaRow'), displayMoney(pitia, Number.isFinite(pitia)));
-    text(document.getElementById('fixedExpensesTotal'), displayMoney(fixedExpenses, hasBudgetExpenses));
-    text(document.getElementById('flexibleExpensesTotal'), displayMoney(flexibleExpenses, hasBudgetExpenses));
-    const savingsEl = document.getElementById('monthlySavingsAfterExpenses');
-    text(savingsEl, displayMoney(monthlyAvailableForSavings, hasBudgetIncome || hasBudgetExpenses));
-    savingsEl.closest('.result').classList.toggle('danger', monthlyAvailableForSavings < 0 && (hasBudgetIncome || hasBudgetExpenses));
-    savingsEl.closest('.result').classList.toggle('good', monthlyAvailableForSavings >= 0 || (!hasBudgetIncome && !hasBudgetExpenses));
-
-    const taxHelp = hasValue('taxOverride')
-      ? 'Manual tax override applied.'
-      : `Auto estimate: ${money(autoTaxes)} / month at about 0.65% annual.`;
-    text(document.getElementById('taxHelp'), taxHelp);
-    const pmiHelp = downPct > 0 && downPct < 0.20
-      ? `PMI estimate: ${money(pmiMonthly)} / month at ${(pmiRate * 100).toFixed(2)}% annual.`
-      : 'No PMI modeled at 20% down or higher.';
-    text(document.getElementById('pmiHelp'), pmiHelp);
-
-    const modelNote = document.getElementById('modelNote');
-    modelNote.textContent = `Modeled rate: ${hasValue('lockRate') ? lockRate.toFixed(2) + '%' : '—'}. ` +
-      `Remaining incentive after buydown: ${money(flexCreditRemaining)}. ` +
-      `Cash-to-close is computed from the current fields.`;
-
-    renderTimeline({
-      cash,
-      monthlySave,
-      monthsToClose,
-      contractDeposit,
-      designDeposit,
-      cashToClose
+    rows.forEach(row => {
+      const tr = document.createElement('tr');
+      if (row.event.includes('deposit')) tr.style.background = '#fafcff';
+      if (row.event === 'Closing') tr.style.background = '#fff7ed';
+      const value = actuals.endingBalances[row.key] ?? '';
+      tr.innerHTML = `
+        <td>${row.month}</td>
+        <td>${row.event}</td>
+        <td class="right">${row.cost == null ? '-' : money(row.cost)}</td>
+        <td class="right">${row.save == null ? '-' : money(row.save)}</td>
+        <td class="right"><input class="inline-input" data-ending-balance="${row.key}" placeholder="${money(row.ending)}" inputmode="numeric" value="${String(value).replace(/"/g, '&quot;')}"></td>
+      `;
+      tbody.appendChild(tr);
     });
+  }
+
+  function setResultTone(id, level){
+    const el = document.getElementById(id)?.closest('.result');
+    if (!el) return;
+    el.classList.toggle('danger', level === 'danger');
+    el.classList.toggle('warn', level === 'warn');
+    el.classList.toggle('good', level === 'good');
+  }
+
+  function renderScenarioTable(state){
+    const tbody = document.querySelector('#scenarioTable tbody');
+    tbody.innerHTML = '';
+    state.scenarios.forEach((scenario, index) => {
+      const model = scenario.model;
+      const tr = document.createElement('tr');
+      if (scenario.id === activeScenario) tr.style.background = '#eef4ff';
+      tr.innerHTML = `
+        <td><input class="mini-input scenario-name" data-scenario-index="${index}" data-scenario-field="name" value="${String(scenario.name).replace(/"/g, '&quot;')}"></td>
+        <td><input class="mini-input" data-kind="percent" data-scenario-index="${index}" data-scenario-field="rate" value="${scenario.rate}"></td>
+        <td><input class="mini-input" data-kind="money" data-scenario-index="${index}" data-scenario-field="buydown" value="${scenario.buydown}"></td>
+        <td><input class="mini-input" data-kind="percent" data-scenario-index="${index}" data-scenario-field="down" value="${scenario.down}"></td>
+        <td><input class="mini-input" data-kind="percent" data-scenario-index="${index}" data-scenario-field="pmiRate" value="${scenario.pmiRate}"></td>
+        <td><input class="mini-input" data-kind="money" data-scenario-index="${index}" data-scenario-field="closingCostCredit" value="${scenario.closingCostCredit}"></td>
+        <td class="right">${money(model.loanAmount)}</td>
+        <td class="right">${displayMoney(model.pAndI, Number.isFinite(model.pAndI))}</td>
+        <td class="right">${money(model.pmiMonthly)}</td>
+        <td class="right">${money(model.pitia)}</td>
+        <td class="right">${money(model.cashToClose)}</td>
+        <td class="right">${money(model.remainingCash)}</td>
+        <td class="center table-action"><button type="button" class="btn secondary" data-apply-scenario="${index}">Use</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderModel(state){
+    if (!state.active){
+      ['contractDeposit','designDeposit','downPaymentAmount','totalPrice','loanAmount','piCustom','pitia','pmiMonthly','cashToClose','remainingCash','contractDepositRow','designDepositRow','cashToCloseRow','budgetIncomeSummary','budgetPitia','budgetPitiaRow','fixedExpensesTotal','flexibleExpensesTotal','monthlySavingsAfterExpenses'].forEach(id => text(document.getElementById(id), '—'));
+      text(document.getElementById('taxHelp'), 'Auto estimate appears after you enter the price fields.');
+      text(document.getElementById('pmiHelp'), 'Applies only below 20% down.');
+      text(document.getElementById('modelNote'), 'Fill in the price, incentive, and loan fields to compare cash-to-close, monthly carry, and runway.');
+      text(document.getElementById('assumptionsSummary'), 'Enter values to see the assumptions driving the model.');
+      renderTimeline(state);
+      renderScenarioTable(state);
+      return;
+    }
+    const c = state.core;
+    text(document.getElementById('totalPrice'), money(c.totalPrice));
+    text(document.getElementById('loanAmount'), money(c.loanAmount));
+    text(document.getElementById('downPaymentAmount'), money(c.downPaymentAmount));
+    text(document.getElementById('contractDeposit'), money(c.contractDeposit));
+    text(document.getElementById('designDeposit'), money(c.designDeposit));
+    text(document.getElementById('cashToClose'), money(c.cashToClose));
+    text(document.getElementById('remainingCash'), money(c.remainingCash));
+    text(document.getElementById('piCustom'), displayMoney(c.pAndI, Number.isFinite(c.pAndI)));
+    text(document.getElementById('pitia'), money(c.pitia));
+    text(document.getElementById('pmiMonthly'), c.pmiMonthly > 0 ? money(c.pmiMonthly) : '$0');
+    text(document.getElementById('contractDepositRow'), money(c.contractDeposit));
+    text(document.getElementById('designDepositRow'), money(c.designDeposit));
+    text(document.getElementById('cashToCloseRow'), money(c.cashToClose));
+    text(document.getElementById('budgetIncomeSummary'), displayMoney(state.budget.budgetIncome, anyFieldValue(budgetIncomeIds)));
+    text(document.getElementById('budgetPitia'), money(c.pitia));
+    text(document.getElementById('budgetPitiaRow'), money(c.pitia));
+    text(document.getElementById('fixedExpensesTotal'), displayMoney(state.budget.fixedExpenses, anyFieldValue(fixedExpenseIds)));
+    text(document.getElementById('flexibleExpensesTotal'), displayMoney(state.budget.flexibleExpenses, anyFieldValue(flexibleExpenseIds)));
+    text(document.getElementById('monthlySavingsAfterExpenses'), displayMoney(state.budget.monthlyAvailableForSavings, anyFieldValue(budgetIncomeIds) || anyFieldValue(fixedExpenseIds) || anyFieldValue(flexibleExpenseIds)));
+    setResultTone('monthlySavingsAfterExpenses', state.budget.monthlyAvailableForSavings < 0 ? 'danger' : 'good');
+    setResultTone('remainingCash', c.buffer.level);
+    text(document.getElementById('cashBufferStatus'), c.buffer.label);
+    text(document.getElementById('taxHelp'), `${c.taxMethod}. Auto tax is ${money(c.autoMonthlyTax)} / month from ${state.inputs.assessmentRatioPct.toFixed(2)}% assessment × ${state.inputs.propertyTaxRatePct.toFixed(2)}% tax rate.`);
+    text(document.getElementById('pmiHelp'), c.pmiMonthly > 0 ? `PMI estimate: ${money(c.pmiMonthly)} / month at ${c.pmiRatePct.toFixed(3)}% annual. PMI is lender-specific; replace with the lender quote.` : 'No PMI modeled at 20% down or higher.');
+    text(document.getElementById('closingHelp'), `Closing costs used in cash-to-close: ${money(c.closingCosts)}.`);
+    text(document.getElementById('unusedIncentive'), money(c.unusedIncentive));
+    text(document.getElementById('closingCreditHelp'), `Applied closing-cost credit: ${money(c.closingCostCredit)}.`);
+    text(document.getElementById('incentiveHelp'), `Buydown ${money(c.buydown)} + closing-cost credit ${money(c.closingCostCredit)} of ${money(c.totalIncentive)} total incentive.`);
+    text(document.getElementById('modelNote'), `Modeled rate: ${c.ratePct.toFixed(2)}%. Closing costs: ${money(c.closingCosts)}. Cash-to-close subtracts only the closing-cost credit, not buydown dollars.`);
+    text(document.getElementById('assumptionsSummary'), `Purchase price ${money(c.totalPrice)} | Down ${c.downPct.toFixed(2)}% | Loan ${money(c.loanAmount)} | Rate ${c.ratePct.toFixed(2)}% | Tax method: ${c.taxMethod} | Closing costs: ${money(c.closingCosts)} | Incentive split: ${money(c.buydown)} buydown, ${money(c.closingCostCredit)} closing costs, ${money(c.unusedIncentive)} unused | PMI rate ${c.pmiRatePct.toFixed(3)}% | Months to close ${c.monthsToClose} | Final cash buffer: ${c.buffer.label}`);
+    renderTimeline(state);
+    renderScenarioTable(state);
+  }
+
+  function recalc(){ renderModel(calculateModelState()); }
+
+  function buildOutputSnapshot(){
+    const state = calculateModelState();
+    const timelineRows = buildTimelineRows(state).map(row => ({
+      key:row.key, month:row.month, event:row.event, cost:valueOrNull(row.cost),
+      costDisplay:row.cost == null ? '-' : money(row.cost), savings:valueOrNull(row.save),
+      savingsDisplay:row.save == null ? '-' : money(row.save), endingBalance:valueOrNull(row.ending),
+      endingBalanceDisplay:money(row.ending), actualEndingBalance:valueOrNull(parsedNumber(actuals.endingBalances[row.key])),
+      actualEndingBalanceInput:actuals.endingBalances[row.key] ?? ''
+    }));
+    return { ...state, timeline:{ monthsToClose:state.core.monthsToClose, rows:timelineRows } };
   }
 
   function exportJson(){
     formatPlannerInputs();
+    const outputState = buildOutputSnapshot();
     const payload = {
-      version: 3,
+      version: 4,
       fields: {},
-      actuals: {
-        endingBalances: Object.fromEntries(
-          Object.entries(actuals.endingBalances).filter(([, value]) => String(value ?? '').trim() !== '')
-        )
-      },
-      outputs: buildOutputSnapshot()
+      actuals: { endingBalances: Object.fromEntries(Object.entries(actuals.endingBalances).filter(([, value]) => String(value ?? '').trim() !== '')) },
+      assumptions: outputState.assumptions,
+      scenarios: scenarios,
+      warnings: outputState.warnings,
+      activeScenario,
+      outputs: outputState
     };
-    fieldIds.forEach(id => {
-      payload.fields[id] = document.getElementById(id).value;
-    });
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    fieldIds.forEach(id => { payload.fields[id] = document.getElementById(id)?.value ?? ''; });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1468,24 +1337,38 @@
   }
 
   function applyImportedData(data){
-    const source = (data && typeof data === 'object' && data.fields && typeof data.fields === 'object')
-      ? data.fields
-      : data;
-
+    const source = data && typeof data === 'object' && data.fields && typeof data.fields === 'object' ? data.fields : data;
     fieldIds.forEach(id => {
-      if (source && Object.prototype.hasOwnProperty.call(source, id)) {
+      if (source && Object.prototype.hasOwnProperty.call(source, id) && document.getElementById(id)) {
         document.getElementById(id).value = source[id] ?? '';
       }
     });
-
+    if (source && Object.prototype.hasOwnProperty.call(source, 'closingCosts') && !hasValue('closingCosts')) {
+      document.getElementById('closingCosts').value = source.closingCosts ?? '';
+    }
+    if (!hasValue('closingCosts') && data && typeof data.closingCostBreakdown === 'object') {
+      const importedClosingTotal = Object.values(data.closingCostBreakdown)
+        .map(parsedNumber)
+        .filter(Number.isFinite)
+        .reduce((sum, value) => sum + value, 0);
+      if (importedClosingTotal > 0) document.getElementById('closingCosts').value = importedClosingTotal;
+    }
+    if (!hasValue('closingCosts') && Number.isFinite(data?.outputs?.core?.closingCosts)) {
+      document.getElementById('closingCosts').value = data.outputs.core.closingCosts;
+    }
     actuals.endingBalances = {};
     if (data && typeof data === 'object' && data.actuals && typeof data.actuals.endingBalances === 'object') {
       Object.entries(data.actuals.endingBalances).forEach(([key, value]) => {
-        if (key === 'reservation') return;
-        actuals.endingBalances[key] = value ?? '';
+        if (key !== 'reservation') actuals.endingBalances[key] = value ?? '';
       });
     }
-
+    if (data && Array.isArray(data.scenarios)) {
+      scenarios = data.scenarios.map((s, index) => ({
+        id:s.id || String(index + 1), name:s.name || `Scenario ${index + 1}`, rate:s.rate ?? '',
+        buydown:s.buydown ?? '', down:s.down ?? '', pmiRate:s.pmiRate ?? '', closingCostCredit:s.closingCostCredit ?? ''
+      }));
+    }
+    activeScenario = data?.activeScenario || '';
     recalc();
     formatPlannerInputs();
   }
@@ -1494,47 +1377,62 @@
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result || '{}'));
-        applyImportedData(parsed);
-      } catch (err) {
-        alert('Could not read the JSON file. Make sure it is valid JSON exported from this page.');
-      }
+      try { applyImportedData(JSON.parse(String(reader.result || '{}'))); }
+      catch (err) { alert('Could not read the JSON file. Make sure it is valid JSON exported from this page.'); }
     };
     reader.readAsText(file);
   }
 
-  document.querySelectorAll('input').forEach(el => el.addEventListener('input', recalc));
-  document.addEventListener('focusin', (e) => {
-    if (e.target.matches('input')) {
-      unformatInputValue(e.target);
-    }
-  });
-  document.addEventListener('focusout', (e) => {
+  document.addEventListener('input', (e) => {
     if (!e.target.matches('input')) return;
-
-    formatInputValue(e.target);
-
+    const scenarioIndex = e.target.dataset.scenarioIndex;
+    const scenarioField = e.target.dataset.scenarioField;
+    if (scenarioIndex != null && scenarioField) {
+      scenarios[Number(scenarioIndex)][scenarioField] = e.target.value;
+      return;
+    }
     const endingBalanceKey = e.target.dataset.endingBalance;
     if (endingBalanceKey) {
       actuals.endingBalances[endingBalanceKey] = e.target.value;
+      return;
     }
-
     recalc();
   });
-  document.getElementById('timelineTable').addEventListener('change', (e) => {
-    const endingBalanceKey = e.target.dataset.endingBalance;
-    if (endingBalanceKey){
-      actuals.endingBalances[endingBalanceKey] = e.target.value;
+  document.addEventListener('focusin', (e) => {
+    if (e.target.matches('input')) unformatInputValue(e.target);
+  });
+  document.addEventListener('focusout', (e) => {
+    if (!e.target.matches('input')) return;
+    const scenarioIndex = e.target.dataset.scenarioIndex;
+    const scenarioField = e.target.dataset.scenarioField;
+    if (scenarioIndex != null && scenarioField) {
+      if (scenarioField !== 'name') formatInputValue(e.target);
+      scenarios[Number(scenarioIndex)][scenarioField] = e.target.value;
+      recalc();
+      return;
     }
-
+    formatInputValue(e.target);
+    const endingBalanceKey = e.target.dataset.endingBalance;
+    if (endingBalanceKey) actuals.endingBalances[endingBalanceKey] = e.target.value;
+    recalc();
+  });
+  document.getElementById('scenarioTable').addEventListener('click', (e) => {
+    const index = e.target.dataset.applyScenario;
+    if (index == null) return;
+    const scenario = scenarios[Number(index)];
+    activeScenario = scenario.id;
+    document.getElementById('lockRate').value = scenario.rate;
+    document.getElementById('buydown').value = scenario.buydown;
+    document.getElementById('down').value = scenario.down;
+    document.getElementById('pmiRate').value = scenario.pmiRate;
+    document.getElementById('closingCostCredit').value = scenario.closingCostCredit;
+    formatPlannerInputs();
     recalc();
   });
   document.getElementById('exportBtn').addEventListener('click', exportJson);
   document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
   document.getElementById('importFile').addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    importJsonFile(file);
+    importJsonFile(e.target.files && e.target.files[0]);
     e.target.value = '';
   });
 
