@@ -20,8 +20,15 @@
     --radius:18px;
   }
   *{box-sizing:border-box}
+  html{
+    width:100%;
+    overflow-x:hidden;
+  }
   body{
     margin:0;
+    width:100%;
+    min-width:0;
+    overflow-x:hidden;
     font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background:
       radial-gradient(circle at top left, rgba(47,111,237,.10), transparent 30%),
@@ -30,6 +37,7 @@
     color:var(--text);
   }
   .wrap{
+    width:100%;
     max-width:1320px;
     margin:0 auto;
     padding:24px;
@@ -42,6 +50,7 @@
     border:1px solid var(--line);
     border-radius:var(--radius);
     box-shadow:var(--shadow);
+    min-width:0;
   }
   .hero-main{
     padding:24px;
@@ -157,6 +166,15 @@
     font-weight:700;
     color:var(--text);
   }
+  .field select{
+    width:100%;
+    border:none;
+    background:transparent;
+    outline:none;
+    font:inherit;
+    font-weight:700;
+    color:var(--text);
+  }
   .field input::placeholder{ color:#94a3b8; font-weight:600; }
   .field small{
     display:block;
@@ -214,6 +232,23 @@
     font:inherit;
     font-weight:700;
     text-align:right;
+  }
+  .inline-input.text{
+    min-width:180px;
+    text-align:left;
+  }
+  .inline-input.event-input{
+    width:100%;
+    min-width:260px;
+  }
+  .runway-date{
+    max-width:380px;
+    margin-bottom:14px;
+  }
+  .runway-date .select-row{
+    display:grid;
+    grid-template-columns:1fr 110px;
+    gap:10px;
   }
   .scenario-name{
     min-width:180px;
@@ -347,7 +382,11 @@
 
   .full{ grid-column:1 / -1; }
   .table-wrap{
+    width:100%;
+    max-width:100%;
+    min-width:0;
     overflow:auto;
+    -webkit-overflow-scrolling:touch;
     border:1px solid var(--line);
     border-radius:16px;
   }
@@ -508,6 +547,9 @@
     }
     .wrap{padding:14px}
     h1{font-size:24px}
+    .inline-input.event-input{
+      min-width:200px;
+    }
   }
 </style>
 </head>
@@ -828,95 +870,38 @@
     </div>
   </div>
 
-  <div class="footer-grid">
-    <div class="card section">
-      <h2>Document checklist</h2>
-      <div class="checks">
-        <div class="panel">
-          <h3>Income and employment</h3>
-          <ul>
-            <li>Current pay stubs.</li>
-            <li>W-2s or equivalent tax documents.</li>
-            <li>Employment verification as requested by the lender.</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h3>Assets and liabilities</h3>
-          <ul>
-            <li>Recent account statements.</li>
-            <li>Current mortgage statement if applicable.</li>
-            <li>Any HOA or recurring obligation statements.</li>
-            <li>Be ready to explain large transfers or deposits.</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h3>Community documents</h3>
-          <ul>
-            <li>Public offering statement or similar disclosure packet.</li>
-            <li>CC&amp;Rs and HOA rules.</li>
-            <li>Warranty documents and home care information.</li>
-            <li>Assessment obligations before closing.</li>
-          </ul>
-        </div>
-        <div class="panel">
-          <h3>Process reminders</h3>
-          <ul>
-            <li>Do not open new credit accounts before closing.</li>
-            <li>Keep employment stable.</li>
-            <li>Match all wire instructions by phone before sending funds.</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div class="card section">
-      <h2>Scenario comparison</h2>
-      <div class="table-wrap">
-        <table id="scenarioTable">
-          <thead>
-            <tr>
-              <th>Scenario</th>
-              <th class="right">Rate %</th>
-              <th class="right">Buydown</th>
-              <th class="right">Down %</th>
-              <th class="right">PMI annual %</th>
-              <th class="right">Closing-credit used</th>
-              <th class="right">Loan amount</th>
-              <th class="right">P&amp;I</th>
-              <th class="right">PMI</th>
-              <th class="right">PITIA</th>
-              <th class="right">Cash to close</th>
-              <th class="right">Cash remaining</th>
-              <th class="center">Use</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div style="height:12px"></div>
-      <div class="note-box">
-        Edit scenarios directly, then use a row to populate the main calculator rate, buydown, down payment, PMI, and closing-credit fields.
-      </div>
-    </div>
-  </div>
-
-  <div class="card section" style="margin-top:18px;">
-    <h2>Assumptions summary</h2>
-    <div class="note-box" id="assumptionsSummary">
-      Enter values to see the assumptions driving the model.
-    </div>
-  </div>
-
   <div class="card section" style="margin-top:18px;">
     <h2>Monthly cash runway</h2>
     <p class="hint">The table starts as a forecast. Enter an ending balance in any row to make that balance flow through the remaining rows.</p>
+    <div class="field runway-date">
+      <label>Starting month</label>
+      <div class="select-row">
+        <select id="runwayStartMonth" aria-label="Monthly cash runway starting month">
+          <option value="">Month</option>
+          <option value="01">January</option>
+          <option value="02">February</option>
+          <option value="03">March</option>
+          <option value="04">April</option>
+          <option value="05">May</option>
+          <option value="06">June</option>
+          <option value="07">July</option>
+          <option value="08">August</option>
+          <option value="09">September</option>
+          <option value="10">October</option>
+          <option value="11">November</option>
+          <option value="12">December</option>
+        </select>
+        <select id="runwayStartYear" aria-label="Monthly cash runway starting year"></select>
+      </div>
+      <small>Monthly rows are calculated forward from this month.</small>
+    </div>
     <div class="table-wrap">
       <table id="timelineTable">
         <thead>
           <tr>
             <th>Month</th>
             <th>Event</th>
-            <th class="right">Estimated cost</th>
+            <th class="right">Housing costs</th>
             <th class="right">Estimated savings</th>
             <th class="right">Ending balance</th>
           </tr>
@@ -945,7 +930,7 @@
   const fieldIds = [
     'base','lot','structural','design','down','lockRate','flexCash','buydown','closingCostCredit',
     'closingCosts','cash','monthlySave','taxOverride','assessmentRatio','propertyTaxRate',
-    'pmiRate','insurance','hoa','monthsToClose','budgetIncomePerson1','budgetIncomePerson2',
+    'pmiRate','insurance','hoa','monthsToClose','runwayStartMonth','runwayStartYear','budgetIncomePerson1','budgetIncomePerson2',
     'expenseAutoPaymentPerson1','expenseAutoPaymentPerson2','expenseGarbagePerson1',
     'expenseGarbagePerson2','expenseWaterPerson1','expenseWaterPerson2','expenseSewerPerson1',
     'expenseSewerPerson2','expenseGasElectricPerson1','expenseGasElectricPerson2',
@@ -973,7 +958,7 @@
   ];
   const budgetIncomeIds = ['budgetIncomePerson1','budgetIncomePerson2'];
 
-  const actuals = { endingBalances: {} };
+  const actuals = { endingBalances: {}, costs: {}, events: {} };
   let activeScenario = '';
   let scenarios = [
     { id:'a', name:'A. 6.49% no buydown', rate:6.49, buydown:0, down:18, pmiRate:0.115, closingCostCredit:'' },
@@ -984,7 +969,7 @@
   ];
 
   const moneyInputIds = new Set(fieldIds.filter(id => ![
-    'down','lockRate','pmiRate','assessmentRatio','propertyTaxRate','monthsToClose'
+    'down','lockRate','pmiRate','assessmentRatio','propertyTaxRate','monthsToClose','runwayStartMonth','runwayStartYear'
   ].includes(id)));
   const percentInputIds = new Set(['down','lockRate','pmiRate','assessmentRatio','propertyTaxRate']);
   const integerInputIds = new Set(['monthsToClose']);
@@ -1007,10 +992,57 @@
   const sumFields = (ids) => ids.reduce((sum, id) => sum + inputNumber(id, 0), 0);
   const anyFieldValue = (ids) => ids.some(hasValue);
 
+  function populateRunwayYearOptions(selectedYear = ''){
+    const yearSelect = document.getElementById('runwayStartYear');
+    if (!yearSelect) return;
+    const currentYear = new Date().getFullYear();
+    const years = new Set(['']);
+    for (let year = currentYear - 1; year <= currentYear + 10; year++) years.add(String(year));
+    if (selectedYear) years.add(String(selectedYear));
+    yearSelect.innerHTML = Array.from(years).sort().map(year => (
+      year ? `<option value="${year}">${year}</option>` : '<option value="">Year</option>'
+    )).join('');
+    yearSelect.value = selectedYear;
+  }
+
+  function getRunwayStartValue(){
+    const month = raw('runwayStartMonth');
+    const year = raw('runwayStartYear');
+    return month && year ? `${year}-${month}` : '';
+  }
+
+  function parseYearMonth(value){
+    const match = String(value || '').match(/^(\d{4})-(\d{2})$/);
+    if (!match) return null;
+    return { year:Number(match[1]), month:Number(match[2]) - 1 };
+  }
+
+  function addMonths(yearMonth, offset){
+    if (!yearMonth) return null;
+    const date = new Date(yearMonth.year, yearMonth.month + offset, 1);
+    return { year:date.getFullYear(), month:date.getMonth() };
+  }
+
+  function formatMonthLabel(yearMonth, fallback){
+    if (!yearMonth) return fallback;
+    return new Intl.DateTimeFormat(undefined, { month:'long', year:'numeric' })
+      .format(new Date(yearMonth.year, yearMonth.month, 1));
+  }
+
+  function formatExportTimestamp(date){
+    const pad = (value) => String(value).padStart(2, '0');
+    return [
+      date.getFullYear(),
+      pad(date.getMonth() + 1),
+      pad(date.getDate())
+    ].join('-') + `-${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  }
+
   function inputKind(el){
     if (!el) return '';
     if (el.dataset.kind) return el.dataset.kind;
     if (el.dataset.endingBalance) return 'money';
+    if (el.dataset.costOverride) return 'money';
     if (moneyInputIds.has(el.id)) return 'money';
     if (percentInputIds.has(el.id)) return 'percent';
     if (integerInputIds.has(el.id)) return 'integer';
@@ -1037,6 +1069,7 @@
   function formatPlannerInputs(){
     fieldIds.forEach(id => formatInputValue(document.getElementById(id)));
     document.querySelectorAll('[data-ending-balance]').forEach(formatInputValue);
+    document.querySelectorAll('[data-cost-override]').forEach(formatInputValue);
   }
 
   function pmt(principal, annualRatePct, months = ASSUMPTIONS.loanTermMonths){
@@ -1109,6 +1142,7 @@
       closingCosts: inputNumber('closingCosts'),
       cash: inputNumber('cash'), monthlySave: inputNumber('monthlySave'),
       monthsToClose: defaultedNumber('monthsToClose', 0),
+      runwayStartMonth: getRunwayStartValue(),
       taxOverride: hasValue('taxOverride') ? inputNumber('taxOverride') : NaN,
       assessmentRatioPct: defaultedNumber('assessmentRatio', ASSUMPTIONS.assessmentRatioPct),
       propertyTaxRatePct: defaultedNumber('propertyTaxRate', ASSUMPTIONS.propertyTaxRatePct),
@@ -1117,7 +1151,10 @@
   }
 
   function calculateModelState(){
-    const anyInput = fieldIds.some(hasValue) || Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '');
+    const anyInput = fieldIds.some(hasValue) ||
+      Object.values(actuals.endingBalances).some(value => String(value ?? '').trim() !== '') ||
+      Object.values(actuals.costs).some(value => String(value ?? '').trim() !== '') ||
+      Object.values(actuals.events).some(value => String(value ?? '').trim() !== '');
     const inputs = readMainInputs();
     const core = calculateForInputs(inputs);
     const fixedExpenses = sumFields(fixedExpenseIds);
@@ -1156,39 +1193,44 @@
   }
 
   function buildTimelineRows(state){
-    const { cash, monthlySave } = state.inputs;
+    const { cash, monthlySave, runwayStartMonth } = state.inputs;
     const { monthsToClose, contractDeposit, designDeposit, cashToClose } = state.core;
     const anyActive = [cash, monthlySave, monthsToClose, contractDeposit, designDeposit, cashToClose].some(v => Number.isFinite(v) && v !== 0);
     if (!anyActive) return [];
     let balance = Number.isFinite(cash) ? cash : 0;
     const rows = [];
+    const startMonth = parseYearMonth(runwayStartMonth);
+    const monthLabel = (offset, fallback) => formatMonthLabel(addMonths(startMonth, offset), fallback);
     const pushRow = (row) => {
-      const override = parsedNumber(actuals.endingBalances[row.key]);
-      const ending = Number.isFinite(override) ? override : row.ending;
-      rows.push({ ...row, ending });
+      const defaultCost = Number.isFinite(row.cost) ? Math.max(0, row.cost) : null;
+      const costOverride = parsedNumber(actuals.costs[row.key]);
+      const cost = row.allowCostOverride === false
+        ? defaultCost
+        : (Number.isFinite(costOverride) ? Math.max(0, costOverride) : defaultCost);
+      const save = Number.isFinite(row.save) ? row.save : null;
+      const calculatedEnding = row.starting ? balance : balance + (save || 0) - (cost || 0);
+      const endingOverride = parsedNumber(actuals.endingBalances[row.key]);
+      const ending = Number.isFinite(endingOverride) ? endingOverride : calculatedEnding;
+      const eventOverride = actuals.events[row.key];
+      rows.push({ ...row, event:String(eventOverride ?? row.event), cost, defaultCost, save, ending });
       balance = ending;
     };
-    pushRow({ key:'start', month:'Now', event:'Starting cash', cost:null, save:null, ending:balance });
-    balance -= contractDeposit;
-    pushRow({ key:'contract', month:'Contract', event:'Contract deposit', cost:contractDeposit, save:null, ending:balance });
+    pushRow({ key:'contract', month:monthLabel(0, 'Process start'), event:'Start of process', cost:contractDeposit, save:null });
     for (let i = 1; i <= monthsToClose; i++){
       const isDesignMonth = i === 2;
       const isClosingMonth = i === monthsToClose;
       const cost = isDesignMonth ? designDeposit : (isClosingMonth ? cashToClose : 0);
       const save = Number.isFinite(monthlySave) ? monthlySave : 0;
-      balance = balance + save - cost;
       pushRow({
         key:`month-${i}`,
-        month:`Month ${i}`,
+        month:monthLabel(i - 1, `Month ${i}`),
         event:isDesignMonth ? 'Design deposit' : (isClosingMonth ? 'Closing' : 'Savings month'),
-        cost: cost || null,
+        cost: cost || 0,
         save: save || null,
-        ending:balance
       });
     }
     if (monthsToClose === 0){
-      balance -= cashToClose;
-      pushRow({ key:'closing', month:'Closing', event:'Closing', cost:cashToClose, save:null, ending:balance });
+      pushRow({ key:'closing', month:monthLabel(0, 'Closing'), event:'Closing', cost:cashToClose, save:null });
     }
     return rows;
   }
@@ -1205,13 +1247,18 @@
       const tr = document.createElement('tr');
       if (row.event.includes('deposit')) tr.style.background = '#fafcff';
       if (row.event === 'Closing') tr.style.background = '#fff7ed';
-      const value = actuals.endingBalances[row.key] ?? '';
+      const endingValue = actuals.endingBalances[row.key] ?? '';
+      const costValue = actuals.costs[row.key] ?? '';
+      const eventValue = actuals.events[row.key] ?? row.event;
+      const costCell = row.allowCostOverride === false
+        ? '-'
+        : `<input class="inline-input" data-cost-override="${row.key}" placeholder="$0" inputmode="numeric" value="${String(costValue).replace(/"/g, '&quot;')}">`;
       tr.innerHTML = `
         <td>${row.month}</td>
-        <td>${row.event}</td>
-        <td class="right">${row.cost == null ? '-' : money(row.cost)}</td>
+        <td><input class="inline-input text event-input" data-event-override="${row.key}" value="${String(eventValue).replace(/"/g, '&quot;')}"></td>
+        <td class="right">${costCell}</td>
         <td class="right">${row.save == null ? '-' : money(row.save)}</td>
-        <td class="right"><input class="inline-input" data-ending-balance="${row.key}" placeholder="${money(row.ending)}" inputmode="numeric" value="${String(value).replace(/"/g, '&quot;')}"></td>
+        <td class="right"><input class="inline-input" data-ending-balance="${row.key}" placeholder="${money(row.ending)}" inputmode="numeric" value="${String(endingValue).replace(/"/g, '&quot;')}"></td>
       `;
       tbody.appendChild(tr);
     });
@@ -1227,6 +1274,7 @@
 
   function renderScenarioTable(state){
     const tbody = document.querySelector('#scenarioTable tbody');
+    if (!tbody) return;
     tbody.innerHTML = '';
     state.scenarios.forEach((scenario, index) => {
       const model = scenario.model;
@@ -1257,7 +1305,6 @@
       text(document.getElementById('taxHelp'), 'Auto estimate appears after you enter the price fields.');
       text(document.getElementById('pmiHelp'), 'Applies only below 20% down.');
       text(document.getElementById('modelNote'), 'Fill in the price, incentive, and loan fields to compare cash-to-close, monthly carry, and runway.');
-      text(document.getElementById('assumptionsSummary'), 'Enter values to see the assumptions driving the model.');
       renderTimeline(state);
       renderScenarioTable(state);
       return;
@@ -1292,7 +1339,6 @@
     text(document.getElementById('closingCreditHelp'), `Applied closing-cost credit: ${money(c.closingCostCredit)}.`);
     text(document.getElementById('incentiveHelp'), `Buydown ${money(c.buydown)} + closing-cost credit ${money(c.closingCostCredit)} of ${money(c.totalIncentive)} total incentive.`);
     text(document.getElementById('modelNote'), `Modeled rate: ${c.ratePct.toFixed(2)}%. Closing costs: ${money(c.closingCosts)}. Cash-to-close subtracts only the closing-cost credit, not buydown dollars.`);
-    text(document.getElementById('assumptionsSummary'), `Purchase price ${money(c.totalPrice)} | Down ${c.downPct.toFixed(2)}% | Loan ${money(c.loanAmount)} | Rate ${c.ratePct.toFixed(2)}% | Tax method: ${c.taxMethod} | Closing costs: ${money(c.closingCosts)} | Incentive split: ${money(c.buydown)} buydown, ${money(c.closingCostCredit)} closing costs, ${money(c.unusedIncentive)} unused | PMI rate ${c.pmiRatePct.toFixed(3)}% | Months to close ${c.monthsToClose} | Final cash buffer: ${c.buffer.label}`);
     renderTimeline(state);
     renderScenarioTable(state);
   }
@@ -1303,21 +1349,41 @@
     const state = calculateModelState();
     const timelineRows = buildTimelineRows(state).map(row => ({
       key:row.key, month:row.month, event:row.event, cost:valueOrNull(row.cost),
-      costDisplay:row.cost == null ? '-' : money(row.cost), savings:valueOrNull(row.save),
+      costDisplay:row.cost == null ? '-' : money(row.cost), defaultCost:valueOrNull(row.defaultCost),
+      costOverride:valueOrNull(parsedNumber(actuals.costs[row.key])), costOverrideInput:actuals.costs[row.key] ?? '',
+      savings:valueOrNull(row.save),
       savingsDisplay:row.save == null ? '-' : money(row.save), endingBalance:valueOrNull(row.ending),
       endingBalanceDisplay:money(row.ending), actualEndingBalance:valueOrNull(parsedNumber(actuals.endingBalances[row.key])),
-      actualEndingBalanceInput:actuals.endingBalances[row.key] ?? ''
+      actualEndingBalanceInput:actuals.endingBalances[row.key] ?? '',
+      eventOverride:actuals.events[row.key] ?? ''
     }));
     return { ...state, timeline:{ monthsToClose:state.core.monthsToClose, rows:timelineRows } };
+  }
+
+  function compactEntries(source){
+    return Object.fromEntries(Object.entries(source).filter(([, value]) => String(value ?? '').trim() !== ''));
   }
 
   function exportJson(){
     formatPlannerInputs();
     const outputState = buildOutputSnapshot();
+    const runwayActuals = {
+      endingBalances: compactEntries(actuals.endingBalances),
+      costs: compactEntries(actuals.costs),
+      events: compactEntries(actuals.events)
+    };
     const payload = {
       version: 4,
       fields: {},
-      actuals: { endingBalances: Object.fromEntries(Object.entries(actuals.endingBalances).filter(([, value]) => String(value ?? '').trim() !== '')) },
+      actuals: runwayActuals,
+      runway: {
+        startMonth: getRunwayStartValue(),
+        startMonthNumber: raw('runwayStartMonth'),
+        startYear: raw('runwayStartYear'),
+        monthsToClose: raw('monthsToClose'),
+        actuals: runwayActuals,
+        rows: outputState.timeline.rows
+      },
       assumptions: outputState.assumptions,
       scenarios: scenarios,
       warnings: outputState.warnings,
@@ -1325,11 +1391,13 @@
       outputs: outputState
     };
     fieldIds.forEach(id => { payload.fields[id] = document.getElementById(id)?.value ?? ''; });
+    payload.fields.runwayStartMonth = getRunwayStartValue();
+    payload.fields.runwayStartYear = raw('runwayStartYear');
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'home-buying-planner-state.json';
+    a.download = `home-buying-planner-state-${formatExportTimestamp(new Date())}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1343,6 +1411,15 @@
         document.getElementById(id).value = source[id] ?? '';
       }
     });
+    const importedStart = parseYearMonth(source?.runwayStartMonth);
+    if (importedStart) {
+      const importedYear = String(importedStart.year);
+      populateRunwayYearOptions(importedYear);
+      document.getElementById('runwayStartMonth').value = String(importedStart.month + 1).padStart(2, '0');
+      document.getElementById('runwayStartYear').value = importedYear;
+    } else if (source?.runwayStartYear) {
+      populateRunwayYearOptions(String(source.runwayStartYear));
+    }
     if (source && Object.prototype.hasOwnProperty.call(source, 'closingCosts') && !hasValue('closingCosts')) {
       document.getElementById('closingCosts').value = source.closingCosts ?? '';
     }
@@ -1357,9 +1434,24 @@
       document.getElementById('closingCosts').value = data.outputs.core.closingCosts;
     }
     actuals.endingBalances = {};
-    if (data && typeof data === 'object' && data.actuals && typeof data.actuals.endingBalances === 'object') {
-      Object.entries(data.actuals.endingBalances).forEach(([key, value]) => {
+    actuals.costs = {};
+    actuals.events = {};
+    const importedActuals = data?.runway?.actuals && typeof data.runway.actuals === 'object'
+      ? data.runway.actuals
+      : data?.actuals;
+    if (importedActuals && typeof importedActuals.endingBalances === 'object') {
+      Object.entries(importedActuals.endingBalances).forEach(([key, value]) => {
         if (key !== 'reservation') actuals.endingBalances[key] = value ?? '';
+      });
+    }
+    if (importedActuals && typeof importedActuals.costs === 'object') {
+      Object.entries(importedActuals.costs).forEach(([key, value]) => {
+        if (key !== 'start') actuals.costs[key] = value ?? '';
+      });
+    }
+    if (importedActuals && typeof importedActuals.events === 'object') {
+      Object.entries(importedActuals.events).forEach(([key, value]) => {
+        actuals.events[key] = value ?? '';
       });
     }
     if (data && Array.isArray(data.scenarios)) {
@@ -1384,7 +1476,7 @@
   }
 
   document.addEventListener('input', (e) => {
-    if (!e.target.matches('input')) return;
+    if (!e.target.matches('input, select')) return;
     const scenarioIndex = e.target.dataset.scenarioIndex;
     const scenarioField = e.target.dataset.scenarioField;
     if (scenarioIndex != null && scenarioField) {
@@ -1396,7 +1488,20 @@
       actuals.endingBalances[endingBalanceKey] = e.target.value;
       return;
     }
+    const costOverrideKey = e.target.dataset.costOverride;
+    if (costOverrideKey) {
+      actuals.costs[costOverrideKey] = e.target.value;
+      return;
+    }
+    const eventOverrideKey = e.target.dataset.eventOverride;
+    if (eventOverrideKey) {
+      actuals.events[eventOverrideKey] = e.target.value;
+      return;
+    }
     recalc();
+  });
+  document.addEventListener('change', (e) => {
+    if (e.target.matches('select')) recalc();
   });
   document.addEventListener('focusin', (e) => {
     if (e.target.matches('input')) unformatInputValue(e.target);
@@ -1414,9 +1519,13 @@
     formatInputValue(e.target);
     const endingBalanceKey = e.target.dataset.endingBalance;
     if (endingBalanceKey) actuals.endingBalances[endingBalanceKey] = e.target.value;
+    const costOverrideKey = e.target.dataset.costOverride;
+    if (costOverrideKey) actuals.costs[costOverrideKey] = e.target.value;
+    const eventOverrideKey = e.target.dataset.eventOverride;
+    if (eventOverrideKey) actuals.events[eventOverrideKey] = e.target.value;
     recalc();
   });
-  document.getElementById('scenarioTable').addEventListener('click', (e) => {
+  document.getElementById('scenarioTable')?.addEventListener('click', (e) => {
     const index = e.target.dataset.applyScenario;
     if (index == null) return;
     const scenario = scenarios[Number(index)];
@@ -1436,6 +1545,7 @@
     e.target.value = '';
   });
 
+  populateRunwayYearOptions();
   recalc();
   formatPlannerInputs();
 </script>
