@@ -651,6 +651,11 @@
             <div class="value" id="designDeposit">—</div>
             <div class="subvalue">Computed from the design budget.</div>
           </div>
+          <div class="result">
+            <div class="label">Closing costs</div>
+            <div class="value" id="closingCostsOutput">—</div>
+            <div class="subvalue">Current planning total before any closing-cost credit.</div>
+          </div>
           <div class="result warn">
             <div class="label">Remaining cash to close</div>
             <div class="value" id="cashToClose">—</div>
@@ -1235,10 +1240,26 @@
     return rows;
   }
 
-  function renderTimeline(state){
+  function cashRemainingDisplay(state, rows = buildTimelineRows(state)){
+    const finalRow = rows[rows.length - 1];
+    const timelineValue = Number.isFinite(finalRow?.ending) ? finalRow.ending : NaN;
+    const value = Number.isFinite(timelineValue) ? timelineValue : state.core.remainingCash;
+    const usesTimeline = Number.isFinite(timelineValue);
+    const source = usesTimeline
+      ? `From Monthly cash runway ending balance (${finalRow.month}).`
+      : 'Starting cash + savings - deposits - closing.';
+    return {
+      value,
+      buffer: cashBufferStatus(value),
+      source,
+      usesTimeline,
+      modeledRemainingCash: state.core.remainingCash
+    };
+  }
+
+  function renderTimeline(state, rows = buildTimelineRows(state)){
     const tbody = document.querySelector('#timelineTable tbody');
     tbody.innerHTML = '';
-    const rows = buildTimelineRows(state);
     if (!rows.length){
       tbody.innerHTML = '<tr><td colspan="5" class="center muted" style="padding:18px 10px;">Enter values to generate the cash runway.</td></tr>';
       return;
@@ -1301,7 +1322,8 @@
 
   function renderModel(state){
     if (!state.active){
-      ['contractDeposit','designDeposit','downPaymentAmount','totalPrice','loanAmount','piCustom','pitia','pmiMonthly','cashToClose','remainingCash','contractDepositRow','designDepositRow','cashToCloseRow','budgetIncomeSummary','budgetPitia','budgetPitiaRow','fixedExpensesTotal','flexibleExpensesTotal','monthlySavingsAfterExpenses'].forEach(id => text(document.getElementById(id), '—'));
+      ['contractDeposit','designDeposit','closingCostsOutput','downPaymentAmount','totalPrice','loanAmount','piCustom','pitia','pmiMonthly','cashToClose','remainingCash','contractDepositRow','designDepositRow','cashToCloseRow','budgetIncomeSummary','budgetPitia','budgetPitiaRow','fixedExpensesTotal','flexibleExpensesTotal','monthlySavingsAfterExpenses'].forEach(id => text(document.getElementById(id), '—'));
+      text(document.getElementById('cashBufferStatus'), 'Starting cash + savings - deposits - closing.');
       text(document.getElementById('taxHelp'), 'Auto estimate appears after you enter the price fields.');
       text(document.getElementById('pmiHelp'), 'Applies only below 20% down.');
       text(document.getElementById('modelNote'), 'Fill in the price, incentive, and loan fields to compare cash-to-close, monthly carry, and runway.');
@@ -1310,13 +1332,16 @@
       return;
     }
     const c = state.core;
+    const timelineRows = buildTimelineRows(state);
+    const cashRemaining = cashRemainingDisplay(state, timelineRows);
     text(document.getElementById('totalPrice'), money(c.totalPrice));
     text(document.getElementById('loanAmount'), money(c.loanAmount));
     text(document.getElementById('downPaymentAmount'), money(c.downPaymentAmount));
     text(document.getElementById('contractDeposit'), money(c.contractDeposit));
     text(document.getElementById('designDeposit'), money(c.designDeposit));
+    text(document.getElementById('closingCostsOutput'), money(c.closingCosts));
     text(document.getElementById('cashToClose'), money(c.cashToClose));
-    text(document.getElementById('remainingCash'), money(c.remainingCash));
+    text(document.getElementById('remainingCash'), money(cashRemaining.value));
     text(document.getElementById('piCustom'), displayMoney(c.pAndI, Number.isFinite(c.pAndI)));
     text(document.getElementById('pitia'), money(c.pitia));
     text(document.getElementById('pmiMonthly'), c.pmiMonthly > 0 ? money(c.pmiMonthly) : '$0');
@@ -1330,8 +1355,8 @@
     text(document.getElementById('flexibleExpensesTotal'), displayMoney(state.budget.flexibleExpenses, anyFieldValue(flexibleExpenseIds)));
     text(document.getElementById('monthlySavingsAfterExpenses'), displayMoney(state.budget.monthlyAvailableForSavings, anyFieldValue(budgetIncomeIds) || anyFieldValue(fixedExpenseIds) || anyFieldValue(flexibleExpenseIds)));
     setResultTone('monthlySavingsAfterExpenses', state.budget.monthlyAvailableForSavings < 0 ? 'danger' : 'good');
-    setResultTone('remainingCash', c.buffer.level);
-    text(document.getElementById('cashBufferStatus'), c.buffer.label);
+    setResultTone('remainingCash', cashRemaining.buffer.level);
+    text(document.getElementById('cashBufferStatus'), `${cashRemaining.buffer.label} ${cashRemaining.source}`);
     text(document.getElementById('taxHelp'), `${c.taxMethod}. Auto tax is ${money(c.autoMonthlyTax)} / month from ${state.inputs.assessmentRatioPct.toFixed(2)}% assessment × ${state.inputs.propertyTaxRatePct.toFixed(2)}% tax rate.`);
     text(document.getElementById('pmiHelp'), c.pmiMonthly > 0 ? `PMI estimate: ${money(c.pmiMonthly)} / month at ${c.pmiRatePct.toFixed(3)}% annual. PMI is lender-specific; replace with the lender quote.` : 'No PMI modeled at 20% down or higher.');
     text(document.getElementById('closingHelp'), `Closing costs used in cash-to-close: ${money(c.closingCosts)}.`);
@@ -1339,15 +1364,32 @@
     text(document.getElementById('closingCreditHelp'), `Applied closing-cost credit: ${money(c.closingCostCredit)}.`);
     text(document.getElementById('incentiveHelp'), `Buydown ${money(c.buydown)} + closing-cost credit ${money(c.closingCostCredit)} of ${money(c.totalIncentive)} total incentive.`);
     text(document.getElementById('modelNote'), `Modeled rate: ${c.ratePct.toFixed(2)}%. Closing costs: ${money(c.closingCosts)}. Cash-to-close subtracts only the closing-cost credit, not buydown dollars.`);
-    renderTimeline(state);
+    renderTimeline(state, timelineRows);
     renderScenarioTable(state);
   }
 
   function recalc(){ renderModel(calculateModelState()); }
 
   function buildOutputSnapshot(){
-    const state = calculateModelState();
-    const timelineRows = buildTimelineRows(state).map(row => ({
+    const baseState = calculateModelState();
+    const rows = buildTimelineRows(baseState);
+    const cashRemaining = cashRemainingDisplay(baseState, rows);
+    const state = {
+      ...baseState,
+      core: {
+        ...baseState.core,
+        modeledRemainingCash: cashRemaining.modeledRemainingCash,
+        remainingCash: cashRemaining.value,
+        remainingCashSource: cashRemaining.source,
+        remainingCashUsesTimeline: cashRemaining.usesTimeline,
+        buffer: cashRemaining.buffer
+      },
+      warnings: [
+        ...(cashRemaining.buffer.level === 'danger' || cashRemaining.buffer.level === 'warn' ? [cashRemaining.buffer.label] : []),
+        ...baseState.warnings.filter(warning => warning !== baseState.core.buffer.label)
+      ]
+    };
+    const timelineRows = rows.map(row => ({
       key:row.key, month:row.month, event:row.event, cost:valueOrNull(row.cost),
       costDisplay:row.cost == null ? '-' : money(row.cost), defaultCost:valueOrNull(row.defaultCost),
       costOverride:valueOrNull(parsedNumber(actuals.costs[row.key])), costOverrideInput:actuals.costs[row.key] ?? '',
