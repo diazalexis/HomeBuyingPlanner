@@ -4,11 +4,25 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Home Buying Planner</title>
+<script>
+  (() => {
+    const key = 'homeBuyingPlannerTheme';
+    let saved = '';
+    try { saved = localStorage.getItem(key); } catch (err) {}
+    const theme = saved === 'dark' || saved === 'light'
+      ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.dataset.theme = theme;
+  })();
+</script>
 <style>
   :root{
+    color-scheme:light;
     --bg:#f4f7fb;
     --card:#ffffff;
     --text:#17212b;
+    --text-strong:#0f172a;
+    --heading-muted:#334155;
     --muted:#5c6b7a;
     --line:#e5ebf2;
     --accent:#2f6fed;
@@ -16,8 +30,72 @@
     --warn:#b45309;
     --danger:#c2410c;
     --soft:#f8fafc;
+    --control:#ffffff;
+    --placeholder:#94a3b8;
+    --button-secondary-bg:#eef4ff;
+    --button-secondary-text:#2448a6;
+    --button-secondary-border:#d8e3ff;
+    --result-bg-start:#ffffff;
+    --result-bg-end:#fbfcff;
+    --table-bg:#ffffff;
+    --table-head:#f8fafc;
+    --expense-head:#fbfcff;
+    --note-bg:#f8fafc;
+    --note-border:#cbd5e1;
+    --tag-bg:#eef2ff;
+    --tag-text:#3730a3;
+    --tag-border:#e0e7ff;
+    --tag-green-bg:#ecfdf5;
+    --tag-green-text:#166534;
+    --tag-green-border:#c7f3dc;
+    --tag-amber-bg:#fff7ed;
+    --tag-amber-text:#9a3412;
+    --tag-amber-border:#fed7aa;
+    --row-deposit:#fafcff;
+    --row-closing:#fff7ed;
+    --row-active:#eef4ff;
     --shadow:0 10px 30px rgba(15, 23, 42, .07);
     --radius:18px;
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0f141b;
+    --card:#151c25;
+    --text:#e7edf5;
+    --text-strong:#f8fafc;
+    --heading-muted:#c8d3df;
+    --muted:#9ba9b8;
+    --line:#2c3847;
+    --accent:#7aa7ff;
+    --accent-2:#42d187;
+    --warn:#f5b45f;
+    --danger:#ff8a65;
+    --soft:#111821;
+    --control:#0f151d;
+    --placeholder:#718093;
+    --button-secondary-bg:#172744;
+    --button-secondary-text:#c9dcff;
+    --button-secondary-border:#29466f;
+    --result-bg-start:#17202a;
+    --result-bg-end:#111923;
+    --table-bg:#121923;
+    --table-head:#192330;
+    --expense-head:#18212c;
+    --note-bg:#111923;
+    --note-border:#405064;
+    --tag-bg:#1c2748;
+    --tag-text:#c9d4ff;
+    --tag-border:#31406f;
+    --tag-green-bg:#123324;
+    --tag-green-text:#9ff0bd;
+    --tag-green-border:#285b3f;
+    --tag-amber-bg:#3a2814;
+    --tag-amber-text:#ffd197;
+    --tag-amber-border:#684421;
+    --row-deposit:#121c2c;
+    --row-closing:#2c2117;
+    --row-active:#1b2b48;
+    --shadow:0 16px 38px rgba(0, 0, 0, .28);
   }
   *{box-sizing:border-box}
   html{
@@ -82,8 +160,8 @@
   .btn{
     appearance:none;
     border:1px solid var(--line);
-    background:#fff;
-    color:#0f172a;
+    background:var(--control);
+    color:var(--text-strong);
     border-radius:12px;
     padding:10px 14px;
     font:inherit;
@@ -97,9 +175,12 @@
     border-color:var(--accent);
   }
   .btn.secondary{
-    background:#eef4ff;
-    color:#2448a6;
-    border-color:#d8e3ff;
+    background:var(--button-secondary-bg);
+    color:var(--button-secondary-text);
+    border-color:var(--button-secondary-border);
+  }
+  .btn.theme-toggle{
+    min-width:118px;
   }
   .grid-2{
     display:grid;
@@ -135,7 +216,7 @@
     margin:10px 0 0;
     padding-top:10px;
     border-top:1px solid var(--line);
-    color:#334155;
+    color:var(--heading-muted);
     font-size:13px;
     text-transform:uppercase;
     letter-spacing:.08em;
@@ -175,7 +256,7 @@
     font-weight:700;
     color:var(--text);
   }
-  .field input::placeholder{ color:#94a3b8; font-weight:600; }
+  .field input::placeholder{ color:var(--placeholder); font-weight:600; }
   .field small{
     display:block;
     margin-top:4px;
@@ -183,7 +264,7 @@
     font-size:11px;
   }
   .field.status{
-    background:#fff;
+    background:var(--control);
   }
   .field.status strong{
     display:block;
@@ -211,14 +292,14 @@
     border:1px solid var(--line);
     border-radius:10px;
     padding:8px 9px;
-    background:#fff;
+    background:var(--control);
     color:var(--text);
     font:inherit;
     font-weight:700;
     text-align:right;
   }
   .inline-input::placeholder{
-    color:#94a3b8;
+    color:var(--placeholder);
     font-weight:600;
   }
   .mini-input{
@@ -227,7 +308,7 @@
     border:1px solid var(--line);
     border-radius:10px;
     padding:7px 8px;
-    background:#fff;
+    background:var(--control);
     color:var(--text);
     font:inherit;
     font-weight:700;
@@ -273,7 +354,7 @@
     margin:10px 0 0;
     padding-top:10px;
     border-top:1px solid var(--line);
-    color:#334155;
+    color:var(--heading-muted);
     font-size:13px;
     text-transform:uppercase;
     letter-spacing:.08em;
@@ -287,7 +368,7 @@
     padding:14px;
     border-radius:16px;
     border:1px solid var(--line);
-    background:linear-gradient(180deg, #fff, #fbfcff);
+    background:linear-gradient(180deg, var(--result-bg-start), var(--result-bg-end));
   }
   .result .label{
     font-size:12px;
@@ -323,13 +404,13 @@
     border:1px solid var(--line);
     border-radius:16px;
     overflow:hidden;
-    background:#fff;
+    background:var(--card);
   }
   .expense-group h3{
     margin:0;
     padding:14px 16px;
     border-bottom:1px solid var(--line);
-    background:#f8fafc;
+    background:var(--soft);
     font-size:14px;
   }
   .expense-row{
@@ -341,7 +422,7 @@
     border-bottom:1px solid var(--line);
   }
   .expense-head{
-    background:#fbfcff;
+    background:var(--expense-head);
     color:var(--muted);
     font-size:12px;
     font-weight:700;
@@ -357,14 +438,14 @@
     border:1px solid var(--line);
     border-radius:10px;
     padding:8px 10px;
-    background:#fff;
+    background:var(--control);
     color:var(--text);
     font:inherit;
     font-weight:700;
     text-align:right;
   }
   .expense-row input::placeholder{
-    color:#94a3b8;
+    color:var(--placeholder);
     font-weight:600;
   }
   .expense-value{
@@ -394,7 +475,7 @@
     width:100%;
     border-collapse:collapse;
     min-width:840px;
-    background:white;
+    background:var(--table-bg);
   }
   th, td{
     padding:12px 10px;
@@ -404,8 +485,8 @@
   }
   th{
     text-align:left;
-    background:#f8fafc;
-    color:#334155;
+    background:var(--table-head);
+    color:var(--heading-muted);
     font-weight:700;
     position:sticky;
     top:0;
@@ -424,7 +505,7 @@
     padding:16px;
     border:1px solid var(--line);
     border-radius:16px;
-    background:linear-gradient(180deg, #fff, #fbfcff);
+    background:linear-gradient(180deg, var(--result-bg-start), var(--result-bg-end));
     min-height:220px;
   }
   .phase h3{
@@ -441,7 +522,7 @@
   .phase ul{
     margin:0;
     padding-left:18px;
-    color:#1f2937;
+    color:var(--text);
     font-size:13px;
     line-height:1.45;
   }
@@ -473,7 +554,7 @@
     padding-left:18px;
     font-size:13px;
     line-height:1.45;
-    color:#1f2937;
+    color:var(--text);
   }
   .panel li{ margin-bottom:7px; }
   .tag{
@@ -482,23 +563,29 @@
     font-size:11px;
     padding:2px 8px;
     border-radius:999px;
-    background:#eef2ff;
-    color:#3730a3;
-    border:1px solid #e0e7ff;
+    background:var(--tag-bg);
+    color:var(--tag-text);
+    border:1px solid var(--tag-border);
     vertical-align:middle;
   }
-  .tag.green{background:#ecfdf5;color:#166534;border-color:#c7f3dc}
-  .tag.amber{background:#fff7ed;color:#9a3412;border-color:#fed7aa}
+  .tag.green{background:var(--tag-green-bg);color:var(--tag-green-text);border-color:var(--tag-green-border)}
+  .tag.amber{background:var(--tag-amber-bg);color:var(--tag-amber-text);border-color:var(--tag-amber-border)}
 
   .muted{color:var(--muted)}
   .note-box{
-    background:#f8fafc;
-    border:1px dashed #cbd5e1;
+    background:var(--note-bg);
+    border:1px dashed var(--note-border);
     padding:14px;
     border-radius:16px;
     font-size:13px;
     line-height:1.5;
-    color:#334155;
+    color:var(--heading-muted);
+  }
+  tr.row-deposit{ background:var(--row-deposit); }
+  tr.row-closing{ background:var(--row-closing); }
+  tr.row-active{ background:var(--row-active); }
+  :root[data-theme="dark"] .btn.primary{
+    color:#08111f;
   }
 
   .footer-grid{
@@ -564,6 +651,7 @@
         </p>
       </div>
       <div class="toolbar">
+        <button type="button" class="btn secondary theme-toggle" id="themeToggle" aria-pressed="false">Dark Mode</button>
         <button type="button" class="btn primary" id="exportBtn">Export JSON</button>
         <button type="button" class="btn secondary" id="importBtn">Import JSON</button>
         <input type="file" id="importFile" accept=".json,application/json" hidden />
@@ -978,6 +1066,7 @@
   ].includes(id)));
   const percentInputIds = new Set(['down','lockRate','pmiRate','assessmentRatio','propertyTaxRate']);
   const integerInputIds = new Set(['monthsToClose']);
+  const themeStorageKey = 'homeBuyingPlannerTheme';
 
   const currencyFormatter = new Intl.NumberFormat(undefined, { style:'currency', currency:'USD', maximumFractionDigits:0 });
   const money = (n) => currencyFormatter.format(Math.round(Number(n) || 0));
@@ -996,6 +1085,23 @@
   const defaultedNumber = (id, fallback) => hasValue(id) && Number.isFinite(num(id)) ? num(id) : fallback;
   const sumFields = (ids) => ids.reduce((sum, id) => sum + inputNumber(id, 0), 0);
   const anyFieldValue = (ids) => ids.some(hasValue);
+
+  function preferredTheme(){
+    let saved = '';
+    try { saved = localStorage.getItem(themeStorageKey); } catch (err) {}
+    if (saved === 'dark' || saved === 'light') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme){
+    const normalized = theme === 'dark' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = normalized;
+    const toggle = document.getElementById('themeToggle');
+    if (!toggle) return;
+    const dark = normalized === 'dark';
+    toggle.textContent = dark ? 'Light Mode' : 'Dark Mode';
+    toggle.setAttribute('aria-pressed', String(dark));
+  }
 
   function populateRunwayYearOptions(selectedYear = ''){
     const yearSelect = document.getElementById('runwayStartYear');
@@ -1266,8 +1372,8 @@
     }
     rows.forEach(row => {
       const tr = document.createElement('tr');
-      if (row.event.includes('deposit')) tr.style.background = '#fafcff';
-      if (row.event === 'Closing') tr.style.background = '#fff7ed';
+      if (row.event.includes('deposit')) tr.classList.add('row-deposit');
+      if (row.event === 'Closing') tr.classList.add('row-closing');
       const endingValue = actuals.endingBalances[row.key] ?? '';
       const costValue = actuals.costs[row.key] ?? '';
       const eventValue = actuals.events[row.key] ?? row.event;
@@ -1300,7 +1406,7 @@
     state.scenarios.forEach((scenario, index) => {
       const model = scenario.model;
       const tr = document.createElement('tr');
-      if (scenario.id === activeScenario) tr.style.background = '#eef4ff';
+      if (scenario.id === activeScenario) tr.classList.add('row-active');
       tr.innerHTML = `
         <td><input class="mini-input scenario-name" data-scenario-index="${index}" data-scenario-field="name" value="${String(scenario.name).replace(/"/g, '&quot;')}"></td>
         <td><input class="mini-input" data-kind="percent" data-scenario-index="${index}" data-scenario-field="rate" value="${scenario.rate}"></td>
@@ -1580,6 +1686,11 @@
     formatPlannerInputs();
     recalc();
   });
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    try { localStorage.setItem(themeStorageKey, nextTheme); } catch (err) {}
+    applyTheme(nextTheme);
+  });
   document.getElementById('exportBtn').addEventListener('click', exportJson);
   document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
   document.getElementById('importFile').addEventListener('change', (e) => {
@@ -1587,6 +1698,7 @@
     e.target.value = '';
   });
 
+  applyTheme(preferredTheme());
   populateRunwayYearOptions();
   recalc();
   formatPlannerInputs();
