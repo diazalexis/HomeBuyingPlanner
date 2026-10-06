@@ -385,6 +385,37 @@
     color:var(--muted);
     line-height:1.35;
   }
+  .payment-breakdown{
+    grid-column:1 / -1;
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:0 18px;
+    padding:4px 14px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:linear-gradient(180deg, var(--result-bg-start), var(--result-bg-end));
+  }
+  .payment-line{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    padding:11px 0;
+    border-bottom:1px solid var(--line);
+    color:var(--muted);
+    font-size:13px;
+  }
+  .payment-line strong{ color:var(--text); font-size:14px; }
+  .payment-total{
+    grid-column:1 / -1;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    padding:14px 0 11px;
+  }
+  .payment-total span{ color:var(--heading-muted); font-size:13px; font-weight:700; }
+  .payment-total strong{ color:var(--accent-2); font-size:24px; }
   .result.good .value{ color:var(--accent-2); }
   .result.warn .value{ color:var(--warn); }
   .result.danger .value{ color:var(--danger); }
@@ -622,6 +653,7 @@
     .inputs, .input-group, .results, .result-group, .budget-summary, .timeline{
       grid-template-columns:1fr;
     }
+    .payment-breakdown{ grid-template-columns:1fr; }
     .expense-row{
       grid-template-columns:1fr;
     }
@@ -678,8 +710,9 @@
           <div class="field"><label for="lockRate">Modeled rate %</label><input id="lockRate" placeholder="Enter rate" inputmode="decimal"><small>Used for the payment estimate.</small></div>
           <div class="field"><label for="flexCash">Total builder/lender incentive</label><input id="flexCash" placeholder="Enter amount" inputmode="numeric"><small>Total incentive amount available.</small></div>
           <div class="field"><label for="buydown">Incentive used for buydown</label><input id="buydown" placeholder="Enter amount" inputmode="numeric"><small>Remaining amount may offset cash-to-close.</small></div>
-          <div class="field"><label for="closingCostCredit">Incentive used toward closing costs</label><input id="closingCostCredit" placeholder="Auto remaining" inputmode="numeric"><small id="closingCreditHelp">Auto uses incentive remaining after buydown.</small></div>
-          <div class="field status"><label>Unused incentive</label><strong id="unusedIncentive">—</strong><span id="incentiveHelp">Buydown + closing-cost credit cannot exceed total incentive.</span></div>
+          <div class="field"><label for="closingCostCredit">Incentive used toward closing costs</label><input id="closingCostCredit" placeholder="Auto remaining" inputmode="numeric"><small id="closingCreditHelp">Auto uses incentive after buydown, capped at closing costs.</small></div>
+          <div class="field status"><label>Incentive used toward upgrades</label><strong id="upgradeCredit">—</strong><span id="upgradeCreditHelp">Auto uses incentive remaining after closing costs and buydown.</span></div>
+          <div class="field status"><label>Unused incentive</label><strong id="unusedIncentive">—</strong><span id="incentiveHelp">Buydown, closing-cost, and upgrade credits cannot exceed total incentive.</span></div>
           <div class="field"><label for="closingCosts">Closing costs</label><input id="closingCosts" placeholder="Enter amount" inputmode="numeric"><small id="closingHelp">Enter the lender estimate or your planning total.</small></div>
         </div>
 
@@ -758,20 +791,13 @@
 
         <div class="result-group">
           <h3>Monthly Payment</h3>
-          <div class="result good">
-            <div class="label">Monthly P&amp;I</div>
-            <div class="value" id="piCustom">—</div>
-            <div class="subvalue">Based on the modeled rate.</div>
-          </div>
-          <div class="result good">
-            <div class="label">Estimated PITIA</div>
-            <div class="value" id="pitia">—</div>
-            <div class="subvalue">P&amp;I + taxes + insurance + PMI + HOA.</div>
-          </div>
-          <div class="result warn">
-            <div class="label">Estimated PMI</div>
-            <div class="value" id="pmiMonthly">—</div>
-            <div class="subvalue">Shown only when down payment is below 20%.</div>
+          <div class="payment-breakdown" aria-label="Estimated monthly PITIA breakdown">
+            <div class="payment-line"><span>Principal &amp; interest</span><strong id="piCustom">—</strong></div>
+            <div class="payment-line"><span>Property taxes</span><strong id="pitiaTax">—</strong></div>
+            <div class="payment-line"><span>Home insurance</span><strong id="pitiaInsurance">—</strong></div>
+            <div class="payment-line"><span>PMI</span><strong id="pmiMonthly">—</strong></div>
+            <div class="payment-line"><span>HOA</span><strong id="pitiaHoa">—</strong></div>
+            <div class="payment-total"><span>Estimated monthly PITIA</span><strong id="pitia">—</strong></div>
           </div>
         </div>
 
@@ -1222,11 +1248,14 @@
     const maxClosingCredit = Math.max(0, totalIncentive - buydown);
     const requestedClosingCredit = Number.isFinite(source.closingCostCredit) ? Math.max(0, source.closingCostCredit) : maxClosingCredit;
     const closingCostCredit = Math.min(requestedClosingCredit, maxClosingCredit, closingCosts);
-    const unusedIncentive = Math.max(0, totalIncentive - buydown - closingCostCredit);
     const contractDeposit = source.base * 0.05 + source.lot * 0.05 + source.structural * 0.20;
     const designDeposit = source.design * 0.20;
+    const maxUpgradeCredit = Math.max(0, source.design - designDeposit);
+    const requestedUpgradeCredit = Number.isFinite(source.upgradeCredit) ? Math.max(0, source.upgradeCredit) : Math.max(0, totalIncentive - buydown - closingCostCredit);
+    const upgradeCredit = Math.min(requestedUpgradeCredit, Math.max(0, totalIncentive - buydown - closingCostCredit), maxUpgradeCredit);
+    const unusedIncentive = Math.max(0, totalIncentive - buydown - closingCostCredit - upgradeCredit);
     const priorDeposits = contractDeposit + designDeposit;
-    const cashToClose = Math.max(0, downPaymentAmount + closingCosts - priorDeposits - closingCostCredit);
+    const cashToClose = Math.max(0, downPaymentAmount + closingCosts - priorDeposits - closingCostCredit - upgradeCredit);
     const monthsToClose = Math.max(0, Math.floor(source.monthsToClose));
     const savingsBeforeClose = Math.max(0, source.monthlySave) * monthsToClose;
     const remainingCash = source.cash + savingsBeforeClose - priorDeposits - cashToClose;
@@ -1237,7 +1266,7 @@
       autoMonthlyTax, monthlyPropertyTax, taxMethod: Number.isFinite(source.taxOverride) ? 'Manual override' : 'Auto formula',
       monthlyInsurance, hoa, pAndI, pmiRatePct, pmiMonthly, pitia, closingCosts,
       closingCostMethod: 'Single closing-cost total',
-      totalIncentive, buydown, closingCostCredit, unusedIncentive, contractDeposit, designDeposit,
+      totalIncentive, buydown, closingCostCredit, upgradeCredit, unusedIncentive, contractDeposit, designDeposit,
       priorDeposits, cashToClose, monthsToClose, savingsBeforeClose, remainingCash,
       buffer
     };
@@ -1250,6 +1279,7 @@
       ratePct: defaultedNumber('lockRate', 0), pmiRatePct: defaultedNumber('pmiRate', ASSUMPTIONS.defaultPmiAnnualPct),
       flexCash: inputNumber('flexCash'), buydown: inputNumber('buydown'),
       closingCostCredit: hasValue('closingCostCredit') ? inputNumber('closingCostCredit') : NaN,
+      upgradeCredit: NaN,
       closingCosts: inputNumber('closingCosts'),
       cash: inputNumber('cash'), monthlySave: inputNumber('monthlySave'),
       monthsToClose: defaultedNumber('monthsToClose', 0),
@@ -1428,7 +1458,7 @@
 
   function renderModel(state){
     if (!state.active){
-      ['contractDeposit','designDeposit','closingCostsOutput','downPaymentAmount','totalPrice','loanAmount','piCustom','pitia','pmiMonthly','cashToClose','remainingCash','contractDepositRow','designDepositRow','cashToCloseRow','budgetIncomeSummary','budgetPitia','budgetPitiaRow','fixedExpensesTotal','flexibleExpensesTotal','monthlySavingsAfterExpenses'].forEach(id => text(document.getElementById(id), '—'));
+      ['contractDeposit','designDeposit','closingCostsOutput','downPaymentAmount','totalPrice','loanAmount','piCustom','pitia','pitiaTax','pitiaInsurance','pmiMonthly','pitiaHoa','cashToClose','remainingCash','contractDepositRow','designDepositRow','cashToCloseRow','budgetIncomeSummary','budgetPitia','budgetPitiaRow','fixedExpensesTotal','flexibleExpensesTotal','monthlySavingsAfterExpenses','upgradeCredit'].forEach(id => text(document.getElementById(id), '—'));
       text(document.getElementById('cashBufferStatus'), 'Starting cash + savings - deposits - closing.');
       text(document.getElementById('taxHelp'), 'Auto estimate appears after you enter the price fields.');
       text(document.getElementById('pmiHelp'), 'Applies only below 20% down.');
@@ -1449,8 +1479,11 @@
     text(document.getElementById('cashToClose'), money(c.cashToClose));
     text(document.getElementById('remainingCash'), money(cashRemaining.value));
     text(document.getElementById('piCustom'), displayMoney(c.pAndI, Number.isFinite(c.pAndI)));
+    text(document.getElementById('pitiaTax'), money(c.monthlyPropertyTax));
+    text(document.getElementById('pitiaInsurance'), money(c.monthlyInsurance));
     text(document.getElementById('pitia'), money(c.pitia));
     text(document.getElementById('pmiMonthly'), c.pmiMonthly > 0 ? money(c.pmiMonthly) : '$0');
+    text(document.getElementById('pitiaHoa'), money(c.hoa));
     text(document.getElementById('contractDepositRow'), money(c.contractDeposit));
     text(document.getElementById('designDepositRow'), money(c.designDeposit));
     text(document.getElementById('cashToCloseRow'), money(c.cashToClose));
@@ -1468,8 +1501,10 @@
     text(document.getElementById('closingHelp'), `Closing costs used in cash-to-close: ${money(c.closingCosts)}.`);
     text(document.getElementById('unusedIncentive'), money(c.unusedIncentive));
     text(document.getElementById('closingCreditHelp'), `Applied closing-cost credit: ${money(c.closingCostCredit)}.`);
-    text(document.getElementById('incentiveHelp'), `Buydown ${money(c.buydown)} + closing-cost credit ${money(c.closingCostCredit)} of ${money(c.totalIncentive)} total incentive.`);
-    text(document.getElementById('modelNote'), `Modeled rate: ${c.ratePct.toFixed(2)}%. Closing costs: ${money(c.closingCosts)}. Cash-to-close subtracts only the closing-cost credit, not buydown dollars.`);
+    text(document.getElementById('upgradeCredit'), money(c.upgradeCredit));
+    text(document.getElementById('upgradeCreditHelp'), `Applied to unpaid upgrades at closing: ${money(c.upgradeCredit)}.`);
+    text(document.getElementById('incentiveHelp'), `Buydown ${money(c.buydown)} + closing-cost credit ${money(c.closingCostCredit)} + upgrade credit ${money(c.upgradeCredit)} of ${money(c.totalIncentive)} total incentive.`);
+    text(document.getElementById('modelNote'), `Modeled rate: ${c.ratePct.toFixed(2)}%. Closing costs: ${money(c.closingCosts)}. Builder incentive also offsets unpaid upgrades at closing.`);
     renderTimeline(state, timelineRows);
     renderScenarioTable(state);
   }

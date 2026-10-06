@@ -10,7 +10,7 @@ A focused, browser-based planner for modeling the financial path to buying a hom
 
 - Calculates total purchase price from base price, homesite premium, structural options, and design budget.
 - Models down payment, loan amount, monthly principal and interest, PMI, property taxes, insurance, HOA, and estimated PITIA.
-- Tracks builder or lender incentives, including buydown allocation, closing-cost credit, and unused incentive amount.
+- Tracks builder or lender incentives across buydowns, closing-cost credits, upgrade credits, and unused incentive amount.
 - Estimates contract deposit, design deposit, cash to close, and remaining cash buffer.
 - Includes a monthly household budget section for net income, fixed expenses, flexible expenses, and available savings.
 - Builds a monthly cash runway from a selected starting month through closing.
